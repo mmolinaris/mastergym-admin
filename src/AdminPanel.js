@@ -1,9 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import {
-  Users, ClipboardList, LayoutDashboard, Search, ChevronRight,
-  Phone, Dumbbell, Calendar, Target, AlertCircle,
-  ArrowLeft, X, MessageCircle, Send
-} from "lucide-react";
+import { Users, ClipboardList, LayoutDashboard, Search, ChevronRight, Dumbbell, Calendar, AlertCircle, ArrowLeft, X, MessageCircle, Send } from "lucide-react";
 
 const SHEET_ID = "1ncZxiiLhlfaWlKHmqZk1qb9tg5R6CBpT3cWKKuZrBXg";
 const API_KEY = "AIzaSyAJAb5dT3e8TVCB8LO11C6fi0b72qHFmmg";
@@ -21,32 +17,14 @@ async function fetchSheet(tab) {
 }
 
 async function fetchAllData() {
-  const [cf, cl, sc, ex] = await Promise.all([
-    fetchSheet("config"), fetchSheet("clienti"), fetchSheet("schede"), fetchSheet("esercizi")
-  ]);
+  const [cf, cl, sc, ex] = await Promise.all([fetchSheet("config"), fetchSheet("clienti"), fetchSheet("schede"), fetchSheet("esercizi")]);
   let progressi = [];
   try { progressi = await fetchSheet("progressi"); } catch(e) {}
-  const esercizi = ex.map(e => ({
-    ...e,
-    seduta: e.seduta || e.giorno || "",
-    recupero: e.recupero || e.riposo_sec || "0",
-    muscolo: e.muscolo || e.gruppo_muscolare || "",
-  }));
-  return {
-    config: Object.fromEntries(cf.map(r => [r.chiave, r.valore])),
-    clienti: cl,
-    schede: sc,
-    esercizi,
-    progressi,
-  };
+  const esercizi = ex.map(e => ({ ...e, seduta: e.seduta || e.giorno || "", recupero: e.recupero || e.riposo_sec || "0", muscolo: e.muscolo || e.gruppo_muscolare || "" }));
+  return { config: Object.fromEntries(cf.map(r => [r.chiave, r.valore])), clienti: cl, schede: sc, esercizi, progressi };
 }
 
-const fmtDate = d => {
-  if (!d) return "—";
-  if (d.includes("/")) return d;
-  const p = d.split("-");
-  return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d;
-};
+const fmtDate = d => { if (!d) return "—"; if (d.includes("/")) return d; const p = d.split("-"); return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : d; };
 const daysUntil = d => { if (!d) return 999; return Math.ceil((new Date(d) - new Date()) / 86400000); };
 
 const T = {
@@ -55,7 +33,7 @@ const T = {
   primary: "#D32F2F", primaryLight: "#FFEBEE", primaryBorder: "#FFCDD2",
   danger: "#EF4444", dangerLight: "#FEF2F2",
   success: "#22C55E", successLight: "#F0FDF4",
-  sidebar: "#1A1A1A", sidebarActive: "#D32F2F",
+  sidebar: "#1A1A1A",
 };
 
 function Sidebar({ active, onNavigate, config }) {
@@ -72,7 +50,7 @@ function Sidebar({ active, onNavigate, config }) {
             <img src={LOGO_URL} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
-            <div style={{ color: "white", fontSize: 13, fontWeight: 800, lineHeight: 1.2 }}>{config?.nome_palestra || "Master Gym"}</div>
+            <div style={{ color: "white", fontSize: 13, fontWeight: 800 }}>{config?.nome_palestra || "Master Gym"}</div>
             <div style={{ color: "#666", fontSize: 10 }}>Pannello Gestione</div>
           </div>
         </div>
@@ -81,7 +59,7 @@ function Sidebar({ active, onNavigate, config }) {
         {items.map(({ id, icon: Icon, label }) => {
           const a = active === id;
           return (
-            <button key={id} onClick={() => onNavigate(id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 4, background: a ? T.sidebarActive : "transparent", color: a ? "white" : "#888", fontWeight: a ? 700 : 500, fontSize: 13 }}>
+            <button key={id} onClick={() => onNavigate(id)} style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 4, background: a ? T.primary : "transparent", color: a ? "white" : "#888", fontWeight: a ? 700 : 500, fontSize: 13 }}>
               <Icon size={18} strokeWidth={a ? 2.2 : 1.5} />{label}
             </button>
           );
@@ -108,7 +86,7 @@ function StatCard({ icon: Icon, label, value, color, bgColor }) {
 }
 
 function WhatsAppModal({ cliente, onClose }) {
-  const msg = `🏋️ *Master Gym — La tua scheda di allenamento!*\n\nCiao ${cliente.nome}! Da oggi puoi vedere la tua scheda direttamente sul telefono.\n\n📲 *Apri questo link:*\n${APP_URL}\n\n🔑 Il tuo codice: *${cliente.codice}*\n🔒 Il tuo PIN: *${cliente.pin}*\n\n━━━━━━━━━━━━━━━\n\n💡 *Per aggiungere l'icona al telefono:*\n\n*iPhone:* Apri con Safari → Condividi ⬆️ → Aggiungi alla schermata Home\n\n*Android:* Apri con Chrome → ⋮ → Aggiungi a schermata Home\n\n✅ Buon allenamento! 💪`;
+  const msg = `🏋️ *Master Gym — La tua scheda!*\n\nCiao ${cliente.nome}! Puoi vedere la tua scheda sul telefono.\n\n📲 ${APP_URL}\n\n🔑 Codice: *${cliente.codice}*\n🔒 PIN: *${cliente.pin}*\n\n💡 Per aggiungere l'icona:\n*iPhone:* Safari → Condividi ⬆️ → Aggiungi alla schermata Home\n*Android:* Chrome → ⋮ → Aggiungi a schermata Home\n\n✅ Buon allenamento! 💪`;
   const waUrl = cliente.telefono ? `https://wa.me/${cliente.telefono.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}` : null;
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -135,14 +113,12 @@ function WhatsAppModal({ cliente, onClose }) {
 function DashboardView({ data, onNavigate, onSelectCliente }) {
   const { clienti, schede, esercizi } = data;
   const stats = useMemo(() => ({
-    totClienti: clienti.filter(c => c.codice).length,
+    totClienti: clienti.filter(c => c.codice && c.nome).length,
     schedeAttive: schede.length,
     inScadenza: clienti.filter(c => { const s = schede.find(sc => sc.scheda_id === c.scheda_attiva); return s && daysUntil(s.data_scadenza) <= 7 && daysUntil(s.data_scadenza) > 0; }).length,
     totEsercizi: esercizi.length,
   }), [clienti, schede, esercizi]);
-
   const recentClienti = useMemo(() => clienti.filter(c => c.codice && c.nome).slice(0, 5), [clienti]);
-
   return (
     <div>
       <div style={{ marginBottom: 28 }}>
@@ -186,7 +162,6 @@ function ClientiView({ data, onSelectCliente }) {
     const q = search.toLowerCase();
     return clienti.filter(c => c.codice && c.nome && `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q));
   }, [clienti, search]);
-
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -223,53 +198,23 @@ function ClientiView({ data, onSelectCliente }) {
   );
 }
 
-function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
-  const { schede, esercizi, progressi } = data;
-  const scheda = schede.find(s => s.scheda_id === cliente.scheda_attiva);
-  const schedaEx = esercizi.filter(e => e.scheda_id === cliente.scheda_attiva);
-  const sedute = [...new Set(schedaEx.map(e => e.seduta))].filter(Boolean);
-
-  return (
-    <div>
-      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
-        <ArrowLeft size={16} /> Torna alla lista
-      </button>
-      <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, padding: 24, marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-          <div style={{ width: 52, height: 52, borderRadius: 14, background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: T.primary }}>{cliente.nome?.[0]}{cliente.cognome?.[0]}</div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, margin: 0 }}>{cliente.nome} {cliente.cognome}</h2>
-            <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>Codice: <b>{cliente.codice}</b> · PIN: <b>{cliente.pin}</b></div>
-          </div>
-          <button onClick={() => onWhatsApp(cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#25D366", color: "white", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
-            <Send size={15} /> WhatsApp
-          </button>
-        </div>
-        {[["📞", cliente.telefono], ["📧", cliente.email], ["📅", `Iscritto: ${fmtDate(cliente.data_iscrizione)}`]].filter(([, v]) => v).map(([icon, val], i) => (
-          <div key={i} style={{ fontSize: 13, color: T.textSec, marginBottom: 4 }}>{icon} {val}</div>
-        ))}
-      </div>
-
 function ProgressiCliente({ cliente, progressi }) {
   const miei = progressi.filter(p => p.codice_cliente === cliente.codice);
   const byEx = {};
-  miei.forEach(p => {
-    if (!byEx[p.esercizio]) byEx[p.esercizio] = [];
-    byEx[p.esercizio].push(p);
-  });
+  miei.forEach(p => { if (!byEx[p.esercizio]) byEx[p.esercizio] = []; byEx[p.esercizio].push(p); });
   const esNames = Object.keys(byEx);
   if (esNames.length === 0) return (
-    <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, padding: 24, textAlign: "center", marginTop: 20 }}>
+    <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, padding: 24, textAlign: "center", marginTop: 16 }}>
       <p style={{ color: T.textSec, fontSize: 14 }}>Nessun progresso registrato ancora.</p>
     </div>
   );
   return (
-    <div style={{ marginTop: 20 }}>
+    <div style={{ marginTop: 16 }}>
       <div style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 12 }}>📈 Progressi registrati</div>
       {esNames.map(ex => {
-        const logs = byEx[ex].sort((a,b) => a.data.localeCompare(b.data));
+        const logs = byEx[ex].sort((a, b) => a.data.localeCompare(b.data));
         const first = parseFloat(logs[0]?.peso_kg) || 0;
-        const last = parseFloat(logs[logs.length-1]?.peso_kg) || 0;
+        const last = parseFloat(logs[logs.length - 1]?.peso_kg) || 0;
         const diff = last - first;
         return (
           <div key={ex} style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, marginBottom: 10, overflow: "hidden" }}>
@@ -299,6 +244,31 @@ function ProgressiCliente({ cliente, progressi }) {
   );
 }
 
+function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
+  const { schede, esercizi, progressi } = data;
+  const scheda = schede.find(s => s.scheda_id === cliente.scheda_attiva);
+  const schedaEx = esercizi.filter(e => e.scheda_id === cliente.scheda_attiva);
+  const sedute = [...new Set(schedaEx.map(e => e.seduta))].filter(Boolean);
+  return (
+    <div>
+      <button onClick={onBack} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
+        <ArrowLeft size={16} /> Torna alla lista
+      </button>
+      <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, padding: 24, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+          <div style={{ width: 52, height: 52, borderRadius: 14, background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: T.primary }}>{cliente.nome?.[0]}{cliente.cognome?.[0]}</div>
+          <div style={{ flex: 1 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: T.text, margin: 0 }}>{cliente.nome} {cliente.cognome}</h2>
+            <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>Codice: <b>{cliente.codice}</b> · PIN: <b>{cliente.pin}</b></div>
+          </div>
+          <button onClick={() => onWhatsApp(cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: "#25D366", color: "white", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 700 }}>
+            <Send size={15} /> WhatsApp
+          </button>
+        </div>
+        {[["📞", cliente.telefono], ["📧", cliente.email], ["📅", `Iscritto: ${fmtDate(cliente.data_iscrizione)}`]].filter(([, v]) => v).map(([icon, val], i) => (
+          <div key={i} style={{ fontSize: 13, color: T.textSec, marginBottom: 4 }}>{icon} {val}</div>
+        ))}
+      </div>
       {scheda ? (
         <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, overflow: "hidden" }}>
           <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -359,7 +329,6 @@ function SchedeView({ data, onSelectScheda }) {
           const numClienti = clienti.filter(c => c.scheda_attiva === s.scheda_id).length;
           const numEx = esercizi.filter(e => e.scheda_id === s.scheda_id).length;
           const sedute = [...new Set(esercizi.filter(e => e.scheda_id === s.scheda_id).map(e => e.seduta))].filter(Boolean).length;
-          const days = daysUntil(s.data_scadenza);
           return (
             <button key={s.scheda_id} onClick={() => onSelectScheda(s)} style={{ width: "100%", background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: 20, cursor: "pointer", textAlign: "left" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
@@ -457,11 +426,23 @@ export default function AdminPanel() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  if (loading) return <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}><Dumbbell size={32} color={T.primary} /><span style={{ color: T.textSec, fontSize: 15 }}>Caricamento...</span></div>;
-  if (error) return <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}><AlertCircle size={40} color={T.danger} /><p style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>Errore</p><p style={{ color: T.textSec, fontSize: 13 }}>{error}</p><button onClick={loadData} style={{ background: T.primary, border: "none", borderRadius: 10, padding: "12px 28px", color: "white", fontWeight: 700, cursor: "pointer" }}>Riprova</button></div>;
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+      <Dumbbell size={32} color={T.primary} />
+      <span style={{ color: T.textSec, fontSize: 15 }}>Caricamento...</span>
+    </div>
+  );
+
+  if (error) return (
+    <div style={{ minHeight: "100vh", background: T.bg, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+      <AlertCircle size={40} color={T.danger} />
+      <p style={{ color: T.text, fontSize: 16, fontWeight: 700 }}>Errore</p>
+      <p style={{ color: T.textSec, fontSize: 13 }}>{error}</p>
+      <button onClick={loadData} style={{ background: T.primary, border: "none", borderRadius: 10, padding: "12px 28px", color: "white", fontWeight: 700, cursor: "pointer" }}>Riprova</button>
+    </div>
+  );
 
   const navigate = p => { setPage(p); setSelectedCliente(null); setSelectedScheda(null); };
-
   const activePage = page === "clienteDetail" ? "clienti" : page === "schedaDetail" ? "schede" : page;
 
   return (
