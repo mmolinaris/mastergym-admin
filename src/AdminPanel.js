@@ -249,6 +249,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
           <div key={i} style={{ fontSize: 13, color: T.textSec, marginBottom: 4 }}>{icon} {val}</div>
         ))}
       </div>
+
 function ProgressiCliente({ cliente, progressi }) {
   const miei = progressi.filter(p => p.codice_cliente === cliente.codice);
   const byEx = {};
