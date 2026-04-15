@@ -24,6 +24,8 @@ async function fetchAllData() {
   const [cf, cl, sc, ex] = await Promise.all([
     fetchSheet("config"), fetchSheet("clienti"), fetchSheet("schede"), fetchSheet("esercizi")
   ]);
+  let progressi = [];
+  try { progressi = await fetchSheet("progressi"); } catch(e) {}
   const esercizi = ex.map(e => ({
     ...e,
     seduta: e.seduta || e.giorno || "",
@@ -35,6 +37,7 @@ async function fetchAllData() {
     clienti: cl,
     schede: sc,
     esercizi,
+    progressi,
   };
 }
 
@@ -221,7 +224,7 @@ function ClientiView({ data, onSelectCliente }) {
 }
 
 function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
-  const { schede, esercizi } = data;
+  const { schede, esercizi, progressi } = data;
   const scheda = schede.find(s => s.scheda_id === cliente.scheda_attiva);
   const schedaEx = esercizi.filter(e => e.scheda_id === cliente.scheda_attiva);
   const sedute = [...new Set(schedaEx.map(e => e.seduta))].filter(Boolean);
@@ -246,6 +249,55 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
           <div key={i} style={{ fontSize: 13, color: T.textSec, marginBottom: 4 }}>{icon} {val}</div>
         ))}
       </div>
+function ProgressiCliente({ cliente, progressi }) {
+  const miei = progressi.filter(p => p.codice_cliente === cliente.codice);
+  const byEx = {};
+  miei.forEach(p => {
+    if (!byEx[p.esercizio]) byEx[p.esercizio] = [];
+    byEx[p.esercizio].push(p);
+  });
+  const esNames = Object.keys(byEx);
+  if (esNames.length === 0) return (
+    <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, padding: 24, textAlign: "center", marginTop: 20 }}>
+      <p style={{ color: T.textSec, fontSize: 14 }}>Nessun progresso registrato ancora.</p>
+    </div>
+  );
+  return (
+    <div style={{ marginTop: 20 }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 12 }}>📈 Progressi registrati</div>
+      {esNames.map(ex => {
+        const logs = byEx[ex].sort((a,b) => a.data.localeCompare(b.data));
+        const first = parseFloat(logs[0]?.peso_kg) || 0;
+        const last = parseFloat(logs[logs.length-1]?.peso_kg) || 0;
+        const diff = last - first;
+        return (
+          <div key={ex} style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, marginBottom: 10, overflow: "hidden" }}>
+            <div style={{ padding: "12px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{ex}</span>
+              {logs.length >= 2 && <span style={{ fontSize: 12, fontWeight: 700, color: diff >= 0 ? "#388E3C" : T.danger, background: diff >= 0 ? "#E8F5E9" : T.dangerLight, padding: "3px 10px", borderRadius: 6 }}>{diff >= 0 ? "+" : ""}{diff.toFixed(1)} kg</span>}
+            </div>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr>{["Data", "Peso", "Reps", "Note"].map(h => <th key={h} style={{ padding: "7px 12px", fontSize: 11, fontWeight: 700, color: T.textMut, textAlign: "left" }}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {logs.map((l, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${T.border}22` }}>
+                    <td style={{ padding: "9px 12px", fontSize: 12, color: T.textSec }}>{l.data}</td>
+                    <td style={{ padding: "9px 12px", fontSize: 13, fontWeight: 700, color: T.primary }}>{l.peso_kg} kg</td>
+                    <td style={{ padding: "9px 12px", fontSize: 12, color: T.textSec }}>{l.ripetizioni_fatte || "—"}</td>
+                    <td style={{ padding: "9px 12px", fontSize: 12, color: T.textSec }}>{l.note_cliente || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
       {scheda ? (
         <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, overflow: "hidden" }}>
           <div style={{ padding: "18px 24px", borderBottom: `1px solid ${T.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -288,6 +340,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp }) {
           <p style={{ color: T.textSec, fontSize: 14 }}>Nessuna scheda assegnata</p>
         </div>
       )}
+      <ProgressiCliente cliente={cliente} progressi={progressi || []} />
     </div>
   );
 }
