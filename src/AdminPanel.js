@@ -5,11 +5,21 @@ import {
   Plus, Trash2, Save, Check, Edit2, Clock, TrendingUp
 } from "lucide-react";
 
-const SHEET_ID = "1ncZxiiLhlfaWlKHmqZk1qb9tg5R6CBpT3cWKKuZrBXg";
-const API_KEY  = "AIzaSyAJAb5dT3e8TVCB8LO11C6fi0b72qHFmmg";
-const BASE_URL = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
-const APP_URL  = "https://mastergymboard.vercel.app";
-const LOGO_URL = "https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png";
+const SHEET_ID    = "1ncZxiiLhlfaWlKHmqZk1qb9tg5R6CBpT3cWKKuZrBXg";
+const API_KEY     = "AIzaSyAJAb5dT3e8TVCB8LO11C6fi0b72qHFmmg";
+const BASE_URL    = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
+const APP_URL     = "https://mastergymboard.vercel.app";
+const LOGO_URL    = "https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png";
+const APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyS5ibCBMpgY-IYzNM2TiQ2lluuXluS7tnv1EcNFU0Ci0vfeBQiPTHDNOLCI1768kST/exec";
+
+async function writeRow(sheet, row) {
+  const res = await fetch(APPS_SCRIPT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sheet, row }),
+    mode: "no-cors",
+  });
+}
 
 const T = {
   bg: "#F7F7F8", card: "#FFFFFF", border: "#E8E8EC",
@@ -818,6 +828,7 @@ export default function AdminPanel() {
   const [selectedScheda,   setSelectedScheda]  = useState(null);
   const [whatsappCliente,  setWhatsappCliente] = useState(null);
   const [showNuovoCliente, setShowNuovoCliente]= useState(false);
+  const [saving, setSaving] = useState(false);
   const [showAggiornaScheda, setShowAggiornaScheda] = useState(false);
   const [toast,            setToast]           = useState(null);
 
@@ -832,16 +843,23 @@ export default function AdminPanel() {
 
   useEffect(()=>{ loadData(); },[loadData]);
 
-  // ── Salva nuovo cliente + scheda ────────────────────────────────────────
-  const handleSaveNuovoCliente = ({ cliente, scheda, esercizi }) => {
-    setData(prev => ({
-      ...prev,
-      clienti:  [...prev.clienti, cliente],
-      schede:   [...prev.schede, scheda],
-      esercizi: [...prev.esercizi, ...esercizi],
-    }));
-    setShowNuovoCliente(false);
-    showToast(`${cliente.nome} ${cliente.cognome} aggiunto con scheda "${scheda.nome_scheda}"!`);
+  // ── Salva nuovo cliente + scheda su Google Sheets ────────────────────────
+  const handleSaveNuovoCliente = async ({ cliente, scheda, esercizi }) => {
+    setSaving(true);
+    try {
+      await writeRow('clienti', [cliente.codice,cliente.cognome,cliente.nome,cliente.pin,cliente.telefono,cliente.email,scheda.scheda_id,cliente.obiettivo,cliente.data_iscrizione]);
+      await writeRow('schede',  [scheda.scheda_id,scheda.nome_scheda,'',scheda.num_sedute,'2',scheda.data_creazione,scheda.data_scadenza,'']);
+      for (const ex of esercizi) {
+        await writeRow('esercizi', [ex.scheda_id,ex.seduta,ex.tipo_seduta||'',ex.esercizio,ex.ripetizioni,ex.serie,ex.recupero,ex.muscolo,ex.peso_suggerito,ex.note||'','',ex.video_url||'']);
+      }
+      setShowNuovoCliente(false);
+      await loadData();
+      showToast('✅ ' + cliente.nome + ' ' + cliente.cognome + ' aggiunto su Google Sheets!');
+    } catch(e) {
+      showToast('❌ Errore: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   // ── Aggiorna scheda cliente ─────────────────────────────────────────────
