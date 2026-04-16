@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+  import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, ClipboardList, LayoutDashboard, Search, ChevronRight,
   Dumbbell, Calendar, AlertCircle, ArrowLeft, X, Send,
@@ -242,7 +242,7 @@ function SeduteEditor({ numSedute, sedute, setSedute, libreria }) {
 }
 
 // ─── FORM NUOVO CLIENTE (cliente + scheda insieme) ─────────────────────────
-function NuovoClienteForm({ data, onSave, onCancel }) {
+function NuovoClienteForm({ data, onSave, onCancel, saving }) {
   const { clienti, schede, libreria } = data;
   const emptyEx = () => ({ esercizio:"", muscolo:"", serie:"3", ripetizioni:"12", recupero:"60", peso_suggerito:"", tipo_seduta:"", note:"", video_url:"" });
 
@@ -377,8 +377,8 @@ function NuovoClienteForm({ data, onSave, onCancel }) {
 
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
         <button onClick={onCancel} style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${T.border}`, background:"white", cursor:"pointer", fontSize:13, fontWeight:600 }}>Annulla</button>
-        <button onClick={handleSave} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:T.primary, color:"white", cursor:"pointer", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
-          <Save size={15}/> Salva cliente e scheda
+        <button onClick={handleSave} disabled={saving} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:saving?"#CCC":T.primary, color:"white", cursor:saving?"not-allowed":"pointer", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6, opacity:saving?0.7:1 }}>
+          <Save size={15}/> {saving ? "Salvo su Sheets..." : "Salva cliente e scheda"}
         </button>
       </div>
     </div>
@@ -386,7 +386,7 @@ function NuovoClienteForm({ data, onSave, onCancel }) {
 }
 
 // ─── FORM AGGIORNA SCHEDA ──────────────────────────────────────────────────
-function AggiornaSchedaForm({ cliente, data, onSave, onCancel }) {
+function AggiornaSchedaForm({ cliente, data, onSave, onCancel, saving }) {
   const { schede, esercizi, libreria } = data;
   const emptyEx = () => ({ esercizio:"", muscolo:"", serie:"3", ripetizioni:"12", recupero:"60", peso_suggerito:"", tipo_seduta:"", note:"", video_url:"" });
 
@@ -491,8 +491,8 @@ function AggiornaSchedaForm({ cliente, data, onSave, onCancel }) {
 
       <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
         <button onClick={onCancel} style={{ padding:"10px 20px", borderRadius:10, border:`1px solid ${T.border}`, background:"white", cursor:"pointer", fontSize:13, fontWeight:600 }}>Annulla</button>
-        <button onClick={handleSave} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:T.primary, color:"white", cursor:"pointer", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
-          <Save size={15}/> Salva nuova scheda
+        <button onClick={handleSave} disabled={saving} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:saving?"#CCC":T.primary, color:"white", cursor:saving?"not-allowed":"pointer", fontSize:13, fontWeight:700, display:"flex", alignItems:"center", gap:6, opacity:saving?0.7:1 }}>
+          <Save size={15}/> {saving ? "Salvo su Sheets..." : "Salva nuova scheda"}
         </button>
       </div>
     </div>
@@ -954,7 +954,7 @@ export default function AdminPanel() {
             <button onClick={()=>setShowNuovoCliente(false)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:T.primary, fontSize:13, fontWeight:600, marginBottom:20, padding:0 }}>
               <ArrowLeft size={16}/> Indietro
             </button>
-            <NuovoClienteForm data={data} onSave={handleSaveNuovoCliente} onCancel={()=>setShowNuovoCliente(false)}/>
+            <NuovoClienteForm data={data} onSave={handleSaveNuovoCliente} onCancel={()=>setShowNuovoCliente(false)} saving={saving}/>
           </div>}
 
         {/* CLIENTE DETAIL */}
@@ -967,7 +967,7 @@ export default function AdminPanel() {
             <button onClick={()=>setShowAggiornaScheda(false)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:T.primary, fontSize:13, fontWeight:600, marginBottom:20, padding:0 }}>
               <ArrowLeft size={16}/> Indietro
             </button>
-            <AggiornaSchedaForm cliente={selectedCliente} data={data} onSave={handleAggiornaScheda} onCancel={()=>setShowAggiornaScheda(false)}/>
+            <AggiornaSchedaForm cliente={selectedCliente} data={data} onSave={handleAggiornaScheda} onCancel={()=>setShowAggiornaScheda(false)} saving={saving}/>
           </div>}
 
         {/* SCHEDE */}
@@ -980,4 +980,4 @@ export default function AdminPanel() {
       </div>
     </div>
   );
-}
+}      
