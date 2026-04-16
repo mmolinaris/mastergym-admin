@@ -1056,11 +1056,11 @@ export default function AdminPanel() {
           </div>}
 
         {/* CLIENTE DETAIL */}
-        {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda &&
-          {!showStorico
+        {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda && (
+          !showStorico
             ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
             : <StoricoView cliente={selectedCliente} data={data} onBack={()=>setShowStorico(false)} onEliminaScheda={handleEliminaScheda}/>
-          }}
+        )}
 
         {/* FORM AGGIORNA SCHEDA */}
         {showAggiornaScheda && selectedCliente &&
