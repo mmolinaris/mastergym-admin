@@ -13,10 +13,19 @@ const LOGO_URL    = "https://raw.githubusercontent.com/mmolinaris/mastergymboard
 const APPS_SCRIPT = "https://script.google.com/macros/s/AKfycbyS5ibCBMpgY-IYzNM2TiQ2lluuXluS7tnv1EcNFU0Ci0vfeBQiPTHDNOLCI1768kST/exec";
 
 async function writeRow(sheet, row) {
-  const res = await fetch(APPS_SCRIPT, {
+  await fetch(APPS_SCRIPT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sheet, row }),
+    body: JSON.stringify({ action: "append", sheet, row }),
+    mode: "no-cors",
+  });
+}
+
+async function deleteRow(sheet, colIndex, value) {
+  await fetch(APPS_SCRIPT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "delete", sheet, colIndex, value }),
     mode: "no-cors",
   });
 }
@@ -589,7 +598,7 @@ function ClientiView({ data, onSelectCliente, onNuovoCliente }) {
 }
 
 // ─── CLIENTE DETAIL ────────────────────────────────────────────────────────
-function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda }) {
+function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, onElimina }) {
   const { schede, esercizi, progressi } = data;
   const scheda   = schede.find(s=>s.scheda_id===cliente.scheda_attiva);
   const schedaEx = esercizi.filter(e=>e.scheda_id===cliente.scheda_attiva);
@@ -623,6 +632,9 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda }) 
             </button>
             <button onClick={onAggiornaScheda} style={{ display:"flex", alignItems:"center", gap:6, background:T.primaryLight, color:T.primary, border:`1px solid ${T.primaryBorder}`, borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
               <Edit2 size={15}/> Aggiorna scheda
+            </button>
+            <button onClick={()=>{ if(window.confirm(`Eliminare ${cliente.nome} ${cliente.cognome}?`)) onElimina(cliente); }} style={{ display:"flex", alignItems:"center", gap:6, background:T.dangerLight, color:T.danger, border:`1px solid ${T.danger}44`, borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
+              <Trash2 size={15}/> Elimina
             </button>
           </div>
         </div>
@@ -843,6 +855,21 @@ export default function AdminPanel() {
 
   useEffect(()=>{ loadData(); },[loadData]);
 
+  // ── Elimina cliente ─────────────────────────────────────────────────────
+  const handleElimina = async (cliente) => {
+    setSaving(true);
+    try {
+      await deleteRow('clienti', 0, cliente.codice);
+      navigate('clienti');
+      await loadData();
+      showToast('✅ Cliente eliminato!');
+    } catch(e) {
+      showToast('❌ Errore: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ── Salva nuovo cliente + scheda su Google Sheets ────────────────────────
   const handleSaveNuovoCliente = async ({ cliente, scheda, esercizi }) => {
     setSaving(true);
@@ -932,7 +959,7 @@ export default function AdminPanel() {
 
         {/* CLIENTE DETAIL */}
         {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda &&
-          <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)}/>}
+          <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina}/>}
 
         {/* FORM AGGIORNA SCHEDA */}
         {showAggiornaScheda && selectedCliente &&
