@@ -571,22 +571,26 @@ function ClientiView({ data, onSelectCliente, onNuovoCliente }) {
           style={{ flex:1, border:"none", outline:"none", fontSize:14, color:T.text, background:"transparent" }}/>
         {search && <button onClick={()=>setSearch("")} style={{ background:"none", border:"none", cursor:"pointer" }}><X size={16} color={T.textMut}/></button>}
       </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:16 }}>
         {filtered.map(c=>{
           const scheda=schede.find(s=>s.scheda_id===c.scheda_attiva);
           const days=scheda?daysUntil(scheda.data_scadenza):999;
+          const scaduta=days<=0&&scheda;
+          const inScadenza=days>0&&days<=7;
           return (
-            <button key={c.codice} onClick={()=>onSelectCliente(c)} style={{ width:"100%", display:"flex", alignItems:"center", gap:14, padding:"16px 20px", border:`1px solid ${T.border}`, borderRadius:14, background:T.card, cursor:"pointer", textAlign:"left" }}>
-              <div style={{ width:44, height:44, borderRadius:12, background:T.primaryLight, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:800, color:T.primary, flexShrink:0 }}>{c.nome?.[0]}{c.cognome?.[0]}</div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:T.text }}>{c.nome} {c.cognome}</div>
-                <div style={{ fontSize:12, color:T.textSec, marginTop:2 }}>{scheda?.nome_scheda||"Nessuna scheda"} · {fmtDate(c.data_iscrizione)}</div>
+            <button key={c.codice} onClick={()=>onSelectCliente(c)} style={{ background:T.card, border:`1px solid ${scaduta?T.danger+"44":T.border}`, borderRadius:16, padding:20, cursor:"pointer", textAlign:"left", display:"flex", flexDirection:"column", gap:12, transition:"box-shadow 0.2s" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ width:48, height:48, borderRadius:14, background:T.primaryLight, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, fontWeight:800, color:T.primary }}>{c.nome?.[0]}{c.cognome?.[0]}</div>
+                {scaduta && <span style={{ fontSize:10, fontWeight:700, color:T.danger, background:T.dangerLight, padding:"3px 8px", borderRadius:6 }}>SCADUTA</span>}
+                {inScadenza && <span style={{ fontSize:10, fontWeight:700, color:"#E65100", background:"#FFF3E0", padding:"3px 8px", borderRadius:6 }}>Scade in {days}g</span>}
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                {days<=7&&days>0 && <span style={{ fontSize:11, fontWeight:700, color:T.danger, background:T.dangerLight, padding:"3px 8px", borderRadius:6 }}>Scade {days}g</span>}
-                {days<=0&&scheda  && <span style={{ fontSize:11, fontWeight:700, color:T.danger, background:T.dangerLight, padding:"3px 8px", borderRadius:6 }}>Scaduta</span>}
-                <span style={{ fontSize:11, color:T.textMut, background:T.bg, padding:"3px 8px", borderRadius:5 }}>{c.codice}</span>
-                <ChevronRight size={16} color={T.textMut}/>
+              <div>
+                <div style={{ fontSize:15, fontWeight:800, color:T.text }}>{c.nome} {c.cognome}</div>
+                <div style={{ fontSize:12, color:T.textSec, marginTop:3 }}>{scheda?.nome_scheda||"Nessuna scheda"}</div>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:11, color:T.textMut }}>{fmtDate(c.data_iscrizione)}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:T.primary, background:T.primaryLight, padding:"2px 8px", borderRadius:5 }}>{c.codice}</span>
               </div>
             </button>
           );
@@ -1061,7 +1065,7 @@ export default function AdminPanel() {
         {/* CLIENTE DETAIL */}
         {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda && (
           !showStorico
-            ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onNuovaScheda={()=>setShowNuovoCliente(true)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
+            ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onNuovaScheda={()=>setShowAggiornaScheda(true)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
             : <StoricoView cliente={selectedCliente} data={data} onBack={()=>setShowStorico(false)} onEliminaScheda={handleEliminaScheda}/>
         )}
 
