@@ -597,7 +597,7 @@ function ClientiView({ data, onSelectCliente, onNuovoCliente }) {
 }
 
 // ─── CLIENTE DETAIL ────────────────────────────────────────────────────────
-function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, onElimina, onVediStorico }) {
+function ClienteDetail({ cliente, data, onBack, onWhatsApp, onNuovaScheda, onAggiornaScheda, onElimina, onVediStorico }) {
   const { schede, esercizi, progressi } = data;
   const scheda   = schede.find(s=>s.scheda_id===cliente.scheda_attiva);
   const schedaEx = esercizi.filter(e=>e.scheda_id===cliente.scheda_attiva);
@@ -629,8 +629,11 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, on
             <button onClick={()=>onWhatsApp(cliente)} style={{ display:"flex", alignItems:"center", gap:6, background:"#25D366", color:"white", border:"none", borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
               <Send size={15}/> WhatsApp
             </button>
+            <button onClick={onNuovaScheda} style={{ display:"flex", alignItems:"center", gap:6, background:T.primary, color:"white", border:"none", borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
+              <Plus size={15}/> Nuova scheda
+            </button>
             <button onClick={onAggiornaScheda} style={{ display:"flex", alignItems:"center", gap:6, background:T.primaryLight, color:T.primary, border:`1px solid ${T.primaryBorder}`, borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
-              <Edit2 size={15}/> Aggiorna scheda
+              <Edit2 size={15}/> Modifica
             </button>
             <button onClick={()=>{ if(window.confirm(`Eliminare ${cliente.nome} ${cliente.cognome}?`)) onElimina(cliente); }} style={{ display:"flex", alignItems:"center", gap:6, background:T.dangerLight, color:T.danger, border:`1px solid ${T.danger}44`, borderRadius:10, padding:"10px 16px", cursor:"pointer", fontSize:13, fontWeight:700 }}>
               <Trash2 size={15}/> Elimina
@@ -667,7 +670,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, on
                         <td style={{ padding:"10px 12px", fontSize:13, fontWeight:600, color:T.text }}>{ex.esercizio}</td>
                         <td style={{ padding:"10px 12px", fontSize:13, color:T.text }}>{ex.serie||"—"}</td>
                         <td style={{ padding:"10px 12px", fontSize:13, color:T.text }}>{ex.ripetizioni||"—"}</td>
-                        <td style={{ padding:"10px 12px", fontSize:13, color:T.text }}>{ex.recupero||"—"}</td>
+                        <td style={{ padding:"10px 12px", fontSize:13, color:T.text }}>{ex.recupero&&ex.recupero!=="0"?ex.recupero+"s":"—"}</td>
                         <td style={{ padding:"10px 12px", fontSize:12, color:T.textSec }}>{ex.muscolo||"—"}</td>
                         <td style={{ padding:"10px 12px", fontSize:13, color:T.primary, fontWeight:600 }}>{ex.peso_suggerito?`${ex.peso_suggerito} kg`:"—"}</td>
                         <td style={{ padding:"10px 12px", fontSize:12, color:T.textSec }}>{ex.note||"—"}</td>
@@ -1058,7 +1061,7 @@ export default function AdminPanel() {
         {/* CLIENTE DETAIL */}
         {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda && (
           !showStorico
-            ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
+            ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onNuovaScheda={()=>setShowNuovoCliente(true)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
             : <StoricoView cliente={selectedCliente} data={data} onBack={()=>setShowStorico(false)} onEliminaScheda={handleEliminaScheda}/>
         )}
 
