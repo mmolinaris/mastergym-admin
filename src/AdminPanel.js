@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, ClipboardList, LayoutDashboard, Search, ChevronRight,
   Dumbbell, Calendar, AlertCircle, ArrowLeft, X, Send,
@@ -597,7 +597,7 @@ function ClientiView({ data, onSelectCliente, onNuovoCliente }) {
 }
 
 // ─── CLIENTE DETAIL ────────────────────────────────────────────────────────
-function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, onElimina }) {
+function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, onElimina, onVediStorico }) {
   const { schede, esercizi, progressi } = data;
   const scheda   = schede.find(s=>s.scheda_id===cliente.scheda_attiva);
   const schedaEx = esercizi.filter(e=>e.scheda_id===cliente.scheda_attiva);
@@ -713,20 +713,91 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onAggiornaScheda, on
         </div>
       )}
 
-      {/* STORICO SCHEDE */}
-      {storicoSchede.length > 0 && (
-        <div style={{ background:T.card, borderRadius:16, border:`1px solid ${T.border}`, padding:24 }}>
-          <div style={{ fontSize:14, fontWeight:800, color:T.text, marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
-            <Clock size={18} color={T.textSec}/> Storico schede precedenti
-          </div>
-          {storicoSchede.map(s=>(
-            <div key={s.scheda_id} style={{ padding:"10px 0", borderBottom:`1px solid ${T.border}` }}>
-              <div style={{ fontSize:13, fontWeight:700, color:T.text }}>{s.nome_scheda}</div>
-              <div style={{ fontSize:12, color:T.textSec, marginTop:2 }}>{s.obiettivo} · {fmtDate(s.data_creazione)} → {fmtDate(s.data_scadenza)}</div>
-            </div>
-          ))}
+      {/* STORICO SCHEDE - bottone */}
+      <div style={{ background:T.card, borderRadius:16, border:`1px solid ${T.border}`, padding:20, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <Clock size={18} color={T.textSec}/>
+          <span style={{ fontSize:14, fontWeight:700, color:T.text }}>Storico schede</span>
+          <span style={{ fontSize:12, color:T.textMut, background:T.bg, padding:"2px 8px", borderRadius:5 }}>{storicoSchede.length} schede passate</span>
+        </div>
+        {storicoSchede.length > 0 && (
+          <button onClick={onVediStorico} style={{ display:"flex", alignItems:"center", gap:6, background:T.bg, border:`1px solid ${T.border}`, borderRadius:10, padding:"8px 16px", cursor:"pointer", color:T.text, fontSize:13, fontWeight:600 }}>
+            Vedi storico →
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── STORICO SCHEDE VIEW ───────────────────────────────────────────────────
+function StoricoView({ cliente, data, onBack, onEliminaScheda }) {
+  const { schede, esercizi } = data;
+  const storicoIds = (cliente.schede_passate||"").split(",").map(x=>x.trim()).filter(Boolean);
+  const storicoSchede = storicoIds.map(id=>schede.find(s=>s.scheda_id===id)).filter(Boolean);
+  const [openId, setOpenId] = useState(null);
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", cursor:"pointer", color:T.primary, fontSize:13, fontWeight:600, marginBottom:20, padding:0 }}>
+        <ArrowLeft size={16}/> Torna a {cliente.nome} {cliente.cognome}
+      </button>
+      <div style={{ marginBottom:24 }}>
+        <h1 style={{ fontSize:22, fontWeight:800, color:T.text, marginBottom:4 }}>📋 Storico schede</h1>
+        <p style={{ fontSize:14, color:T.textSec }}>{cliente.nome} {cliente.cognome} · {storicoSchede.length} schede passate</p>
+      </div>
+      {storicoSchede.length === 0 && (
+        <div style={{ background:T.card, borderRadius:16, border:`1px solid ${T.border}`, padding:40, textAlign:"center" }}>
+          <p style={{ color:T.textSec, fontSize:14 }}>Nessuna scheda passata.</p>
         </div>
       )}
+      {storicoSchede.map(s => {
+        const exs = esercizi.filter(e=>e.scheda_id===s.scheda_id);
+        const seds = [...new Set(exs.map(e=>e.seduta))].filter(Boolean);
+        const isOpen = openId === s.scheda_id;
+        return (
+          <div key={s.scheda_id} style={{ background:T.card, borderRadius:16, border:`1px solid ${T.border}`, marginBottom:12, overflow:"hidden" }}>
+            <div style={{ padding:"16px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <div style={{ fontSize:15, fontWeight:800, color:T.text }}>{s.nome_scheda}</div>
+                <div style={{ fontSize:12, color:T.textSec, marginTop:2 }}>{s.obiettivo} · {fmtDate(s.data_creazione)} → {fmtDate(s.data_scadenza)}</div>
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={()=>setOpenId(isOpen?null:s.scheda_id)} style={{ background:T.bg, border:`1px solid ${T.border}`, borderRadius:8, padding:"7px 14px", cursor:"pointer", fontSize:12, fontWeight:600, color:T.text }}>
+                  {isOpen ? "Chiudi ▲" : "Vedi esercizi ▼"}
+                </button>
+                <button onClick={()=>{ if(window.confirm(`Eliminare la scheda ${s.nome_scheda}?`)) onEliminaScheda(s); }} style={{ background:T.dangerLight, border:`1px solid ${T.danger}44`, borderRadius:8, padding:"7px 14px", cursor:"pointer", fontSize:12, fontWeight:600, color:T.danger, display:"flex", alignItems:"center", gap:4 }}>
+                  <Trash2 size={13}/> Elimina
+                </button>
+              </div>
+            </div>
+            {isOpen && seds.map(sed => {
+              const dayExs = exs.filter(e=>e.seduta===sed);
+              return (
+                <div key={sed} style={{ borderTop:`1px solid ${T.border}` }}>
+                  <div style={{ padding:"8px 20px", background:T.bg, fontSize:12, fontWeight:700, color:T.primary }}>{sed}</div>
+                  <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                    <thead><tr>{["Esercizio","Serie","Reps","Rec.","Muscolo","Peso"].map(h=><th key={h} style={{ padding:"6px 12px", fontSize:11, fontWeight:700, color:T.textMut, textAlign:"left" }}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {dayExs.map((ex,i)=>(
+                        <tr key={i} style={{ borderBottom:`1px solid ${T.border}22` }}>
+                          <td style={{ padding:"8px 12px", fontSize:13, fontWeight:600, color:T.text }}>{ex.esercizio}</td>
+                          <td style={{ padding:"8px 12px", fontSize:13, color:T.text }}>{ex.serie||"—"}</td>
+                          <td style={{ padding:"8px 12px", fontSize:13, color:T.text }}>{ex.ripetizioni||"—"}</td>
+                          <td style={{ padding:"8px 12px", fontSize:13, color:T.text }}>{ex.recupero&&ex.recupero!="0"?ex.recupero+"s":"—"}</td>
+                          <td style={{ padding:"8px 12px", fontSize:12, color:T.textSec }}>{ex.muscolo||"—"}</td>
+                          <td style={{ padding:"8px 12px", fontSize:13, color:T.primary, fontWeight:600 }}>{ex.peso_suggerito?ex.peso_suggerito+" kg":"—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -840,6 +911,7 @@ export default function AdminPanel() {
   const [whatsappCliente,  setWhatsappCliente] = useState(null);
   const [showNuovoCliente, setShowNuovoCliente]= useState(false);
   const [saving, setSaving] = useState(false);
+  const [showStorico, setShowStorico] = useState(false);
   const [showAggiornaScheda, setShowAggiornaScheda] = useState(false);
   const [toast,            setToast]           = useState(null);
 
@@ -853,6 +925,21 @@ export default function AdminPanel() {
   },[]);
 
   useEffect(()=>{ loadData(); },[loadData]);
+
+  // ── Elimina scheda storico ──────────────────────────────────────────────
+  const handleEliminaScheda = async (scheda) => {
+    setSaving(true);
+    try {
+      await deleteRow('schede', 0, scheda.scheda_id);
+      await deleteRow('esercizi', 0, scheda.scheda_id);
+      await loadData();
+      showToast('✅ Scheda eliminata!');
+    } catch(e) {
+      showToast('❌ Errore: ' + e.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ── Elimina cliente ─────────────────────────────────────────────────────
   const handleElimina = async (cliente) => {
@@ -940,7 +1027,7 @@ export default function AdminPanel() {
     </div>
   );
 
-  const navigate = p => { setPage(p); setSelectedCliente(null); setSelectedScheda(null); setShowNuovoCliente(false); setShowAggiornaScheda(false); };
+  const navigate = p => { setPage(p); setSelectedCliente(null); setSelectedScheda(null); setShowNuovoCliente(false); setShowAggiornaScheda(false); setShowStorico(false); };
   const activePage = page==="clienteDetail"?"clienti":page==="schedaDetail"?"schede":page;
 
   return (
@@ -970,7 +1057,10 @@ export default function AdminPanel() {
 
         {/* CLIENTE DETAIL */}
         {page==="clienteDetail" && selectedCliente && !showNuovoCliente && !showAggiornaScheda &&
-          <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina}/>}
+          {!showStorico
+            ? <ClienteDetail cliente={selectedCliente} data={data} onBack={()=>navigate("clienti")} onWhatsApp={c=>setWhatsappCliente(c)} onAggiornaScheda={()=>setShowAggiornaScheda(true)} onElimina={handleElimina} onVediStorico={()=>setShowStorico(true)}/>
+            : <StoricoView cliente={selectedCliente} data={data} onBack={()=>setShowStorico(false)} onEliminaScheda={handleEliminaScheda}/>
+          }}
 
         {/* FORM AGGIORNA SCHEDA */}
         {showAggiornaScheda && selectedCliente &&
