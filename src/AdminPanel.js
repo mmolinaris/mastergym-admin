@@ -1,4 +1,4 @@
-  import { useState, useEffect, useCallback, useMemo } from "react";
+ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Users, ClipboardList, LayoutDashboard, Search, ChevronRight,
   Dumbbell, Calendar, AlertCircle, ArrowLeft, X, Send,
@@ -101,7 +101,6 @@ function Sidebar({ active, onNavigate, config }) {
         {[
           { id:"dashboard", icon:LayoutDashboard, label:"Dashboard" },
           { id:"clienti",   icon:Users,           label:"Clienti"   },
-          { id:"schede",    icon:ClipboardList,   label:"Schede"    },
         ].map(({ id, icon:Icon, label }) => {
           const a = active===id;
           return (
@@ -874,14 +873,26 @@ export default function AdminPanel() {
   const handleSaveNuovoCliente = async ({ cliente, scheda, esercizi }) => {
     setSaving(true);
     try {
-      await writeRow('clienti', [cliente.codice,cliente.cognome,cliente.nome,cliente.pin,cliente.telefono,cliente.email,scheda.scheda_id,cliente.obiettivo,cliente.data_iscrizione]);
-      await writeRow('schede',  [scheda.scheda_id,scheda.nome_scheda,'',scheda.num_sedute,'2',scheda.data_creazione,scheda.data_scadenza,'']);
+      // Fetch dati freschi per codici aggiornati
+      const freshData = await fetchAllData();
+      const codiceCliente = nextCode(freshData.clienti.map(c=>c.codice), "MG-");
+      const codiceScheda  = nextCode(freshData.schede.map(s=>s.scheda_id), "SCH-");
+      
+      // Controllo duplicati
+      const dup = freshData.clienti.find(c => 
+        c.nome?.toLowerCase()===cliente.nome.toLowerCase() && 
+        c.cognome?.toLowerCase()===cliente.cognome.toLowerCase()
+      );
+      if(dup) { showToast('❌ ' + cliente.nome + ' ' + cliente.cognome + ' esiste già!', 'error'); return; }
+
+      await writeRow('clienti', [codiceCliente,cliente.cognome,cliente.nome,cliente.pin,cliente.telefono,cliente.email,codiceScheda,cliente.obiettivo,cliente.data_iscrizione]);
+      await writeRow('schede',  [codiceScheda,scheda.nome_scheda,'',scheda.num_sedute,'2',scheda.data_creazione,scheda.data_scadenza,'']);
       for (const ex of esercizi) {
-        await writeRow('esercizi', [ex.scheda_id,ex.seduta,ex.tipo_seduta||'',ex.esercizio,ex.ripetizioni,ex.serie,ex.recupero,ex.muscolo,ex.peso_suggerito,ex.note||'','',ex.video_url||'']);
+        await writeRow('esercizi', [codiceScheda,ex.seduta,ex.tipo_seduta||'',ex.esercizio,ex.ripetizioni,ex.serie,ex.recupero,ex.muscolo,ex.peso_suggerito,ex.note||'','',ex.video_url||'']);
       }
       setShowNuovoCliente(false);
       await loadData();
-      showToast('✅ ' + cliente.nome + ' ' + cliente.cognome + ' aggiunto su Google Sheets!');
+      showToast('✅ ' + cliente.nome + ' ' + cliente.cognome + ' (' + codiceCliente + ') aggiunto!');
     } catch(e) {
       showToast('❌ Errore: ' + e.message, 'error');
     } finally {
@@ -980,4 +991,4 @@ export default function AdminPanel() {
       </div>
     </div>
   );
-}      
+}
