@@ -12,7 +12,7 @@ import {
    ───────────────────────────────────────────── */
 const SHEET_ID   = "144-i_O8EGeL51ku9oi7n44oS1KGQY2cutIrulSVDJcw";
 const API_KEY    = "AIzaSyDEoQi1P3VVocd7Yokkw8by8PLWq-t1IV4";
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuES51WybE5hNT-OYm0isO7zhDM2ElEC9mb1lBZyF764F5dX-75_WFTI5069sERAqa/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzZnvJik0pL0MERyf7q2f_VV4MYI4XndduDbjIu0bdfpac1WVmMWLLTiUwGBrg879_6/exec";
 const BASE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 const APP_URL    = "https://mastergymcanelli.vercel.app";
 
@@ -316,19 +316,14 @@ function LoginScreen({ onLogin }) {
             <Input value={user} onChange={setUser} placeholder="Username" />
           </Field>
           <Field label="PASSWORD">
-            <div style={{ position: "relative" }}>
-              <input
-                type={showPass ? "text" : "password"}
-                value={pass}
-                onChange={e => setPass(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && handleLogin()}
-                placeholder="Password"
-                style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 40px 9px 11px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}
-              />
-              <button onClick={() => setShowPass(v => !v)} style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: T.textMut }}>
-                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
+            <input
+              type="password"
+              value={pass}
+              onChange={e => setPass(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleLogin()}
+              placeholder="Password"
+              style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 11px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}
+            />
           </Field>
 
           {error && <p style={{ fontSize: 12, color: T.danger, textAlign: "center", margin: 0 }}>{error}</p>}
@@ -449,9 +444,19 @@ function WAModal({ cliente, onClose }) {
 /* ─────────────────────────────────────────────
    CLIENTE FORM MODAL (aggiunta/modifica)
    ───────────────────────────────────────────── */
-function ClienteFormModal({ cliente, onClose, onSaved }) {
+function genCodiceCliente(clienti) {
+  const nums = clienti.map(c => parseInt((c.codice || "").replace(/\D/g, ""))).filter(n => !isNaN(n));
+  const next = nums.length > 0 ? Math.max(...nums) + 1 : 1;
+  return `MG-${String(next).padStart(3, "0")}`;
+}
+
+function genPin() {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+function ClienteFormModal({ cliente, onClose, onSaved, clienti = [] }) {
   const isEdit = !!cliente;
-  const [form, setForm] = useState(cliente || { codice: "", nome: "", cognome: "", pin: "", telefono: "", email: "", data_iscrizione: today(), scheda_attiva: "", schede_passate: "", obiettivo: "" });
+  const [form, setForm] = useState(cliente || { codice: genCodiceCliente(clienti), nome: "", cognome: "", pin: genPin(), telefono: "", email: "", data_iscrizione: today(), scheda_attiva: "", schede_passate: "", obiettivo: "" });
   const [saving, setSaving] = useState(false);
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
@@ -631,7 +636,7 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
   return (
     <div>
       {confirmDel && <ConfirmModal message="Eliminare questo cliente?" onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
-      {(showForm || editCliente) && <ClienteFormModal cliente={editCliente} onClose={() => { setShowForm(false); setEditCliente(null); }} onSaved={onRefresh} />}
+      {(showForm || editCliente) && <ClienteFormModal cliente={editCliente} clienti={clienti} onClose={() => { setShowForm(false); setEditCliente(null); }} onSaved={onRefresh} />}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
         <div>
