@@ -1,10 +1,3 @@
-/* ================================================
-   GYMBOARD — Google Apps Script v2
-   Incolla tutto questo codice nell'Apps Script
-   Estensioni → Apps Script → Cancella tutto → Incolla → Salva
-   Poi: Distribuisci → Gestisci distribuzioni → Modifica → Nuova versione → Distribuisci
-   ================================================ */
-
 const SHEET_CLIENTI  = "clienti";
 const SHEET_SCHEDE   = "schede";
 const SHEET_ESERCIZI = "esercizi";
