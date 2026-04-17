@@ -10,7 +10,7 @@ import {
    CONFIGURAZIONE
    ───────────────────────────────────────────── */
 const SHEET_ID   = "144-i_O8EGeL51ku9oi7n44oS1KGQY2cutIrulSVDJcw";
-const API_KEY    = "AIzaSyAJAb5dT3e8TVCB8LO11C6fi0b72qHFmmg";
+const API_KEY    = "AIzaSyDEoQi1P3VVocd7Yokkw8by8PLWq-t1IV4";
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxuES51WybE5hNT-OYm0isO7zhDM2ElEC9mb1lBZyF764F5dX-75_WFTI5069sERAqa/exec";
 const BASE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 const APP_URL    = "https://mastergymcanelli.vercel.app";
