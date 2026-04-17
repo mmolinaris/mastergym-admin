@@ -142,13 +142,15 @@ async function fetchAllData() {
 }
 
 async function writeViaScript(action, payload) {
+  const body = JSON.stringify({ action, ...payload });
   const res = await fetch(SCRIPT_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...payload }),
+    body,
+    redirect: "follow",
   });
   if (!res.ok) throw new Error(`Errore scrittura: ${res.status}`);
-  return res.json();
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { return { status: "ok" }; }
 }
 
 /* ─────────────────────────────────────────────
