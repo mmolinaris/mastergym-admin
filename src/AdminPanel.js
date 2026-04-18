@@ -1122,7 +1122,6 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   );
 }
 
-}
 
 /* ─────────────────────────────────────────────
    SCHEDE VIEW
