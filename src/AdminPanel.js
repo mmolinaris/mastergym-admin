@@ -137,8 +137,10 @@ async function fetchAllData() {
     fetchSheet("config"), fetchSheet("clienti"), fetchSheet("schede"),
     fetchSheet("esercizi"), fetchSheet("libreria_esercizi"),
   ]);
+  let servizi = [];
+  try { servizi = await fetchSheet("servizi"); } catch(e) {}
   const config = Object.fromEntries(configRows.map(r => [r.chiave, r.valore]));
-  return { config, clienti, schede, esercizi, libreria };
+  return { config, clienti, schede, esercizi, libreria, servizi };
 }
 
 async function writeViaScript(action, payload) {
@@ -344,10 +346,11 @@ function LoginScreen({ onLogin }) {
    ───────────────────────────────────────────── */
 function Sidebar({ active, onNavigate, config, onLogout }) {
   const items = [
-    { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
-    { id: "clienti",   icon: Users,           label: "Clienti"   },
-    { id: "schede",    icon: ClipboardList,   label: "Schede"    },
-    { id: "esercizi",  icon: Dumbbell,        label: "Esercizi"  },
+    { id: "dashboard",     icon: LayoutDashboard, label: "Dashboard"     },
+    { id: "clienti",       icon: Users,           label: "Clienti"       },
+    { id: "schede",        icon: ClipboardList,   label: "Schede"        },
+    { id: "esercizi",      icon: Dumbbell,        label: "Esercizi"      },
+    { id: "impostazioni",  icon: Settings,        label: "Palestra"      },
   ];
   return (
     <div style={{ width: 232, minHeight: "100vh", background: T.sidebar, display: "flex", flexDirection: "column", flexShrink: 0, borderRight: `1px solid ${T.sidebarBorder}` }}>
@@ -869,38 +872,80 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const in2m   = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
 
   const [info, setInfo] = useState({
-    nome_scheda:   scheda?.nome_scheda   || "",
-    obiettivo:     scheda?.obiettivo     || "",
-    data_inizio:   scheda?.data_creazione || today2,
-    data_scadenza: scheda?.data_scadenza  || in2m,
-    note_trainer:  scheda?.note_trainer   || "",
-    cliente_codice: cliente?.codice       || "",
+    nome_scheda:    scheda?.nome_scheda   || "",
+    obiettivo:      scheda?.obiettivo     || "",
+    data_inizio:    scheda?.data_creazione || today2,
+    data_scadenza:  scheda?.data_scadenza  || in2m,
+    note_trainer:   scheda?.note_trainer   || "",
+    cliente_codice: cliente?.codice        || "",
   });
 
   const [exs, setExs] = useState(() =>
     (esErca || []).map((e, i) => ({ ...e, seduta: e.seduta || e.giorno || "Seduta 1", _id: i }))
   );
   const [searchEx, setSearchEx] = useState("");
+  const [searchBySed, setSearchBySed] = useState({});
 
   const sedute = useMemo(() => [...new Set(exs.map(e => e.seduta))].filter(Boolean), [exs]);
 
-  const libFiltered = useMemo(() => {
-    const q = searchEx.toLowerCase();
-    if (!q) return libreria.slice(0, 30);
-    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q)).slice(0, 30);
-  }, [libreria, searchEx]);
+  // Libreria raggruppata per muscolo
+  const libByMuscolo = useMemo(() => {
+    const g = {};
+    libreria.forEach(e => {
+      const k = e.muscolo || "Altro";
+      if (!g[k]) g[k] = [];
+      g[k].push(e);
+    });
+    return g;
+  }, [libreria]);
+
+  const getLibFiltered = (q) => {
+    if (!q) return libreria.slice(0, 40);
+    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q.toLowerCase())).slice(0, 40);
+  };
 
   const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
   const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
 
-  const addFromLib = (ex, sedutaTarget) => {
+  // Sposta esercizio su/giù
+  const moveEx = (id, dir) => {
+    setExs(prev => {
+      const sed = prev.find(e => e._id === id)?.seduta;
+      const inSed = prev.filter(e => e.seduta === sed);
+      const idx = inSed.findIndex(e => e._id === id);
+      const newIdx = idx + dir;
+      if (newIdx < 0 || newIdx >= inSed.length) return prev;
+      const other = inSed[newIdx];
+      return prev.map(e => {
+        if (e._id === id) return { ...e, ordine: other.ordine };
+        if (e._id === other._id) return { ...e, ordine: inSed[idx].ordine };
+        return e;
+      });
+    });
+  };
+
+  const addFromLib = (ex, sedutaTarget, position) => {
     const target = sedutaTarget || sedute[0] || "Seduta 1";
-    const ordine = exs.filter(e => e.seduta === target).length + 1;
-    setExs(prev => [...prev, {
+    const inSed = exs.filter(e => e.seduta === target);
+    const ordine = position !== undefined ? position : inSed.length + 1;
+    const newEx = {
       esercizio: ex.esercizio, muscolo: ex.muscolo, seduta: target,
       serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
       ordine, _id: Date.now() + Math.random()
-    }]);
+    };
+    if (position !== undefined) {
+      // Inserisci alla posizione specificata e riscala gli altri
+      setExs(prev => {
+        const others = prev.filter(e => e.seduta === target);
+        const rest = prev.filter(e => e.seduta !== target);
+        const updated = others.map(e => ({
+          ...e, ordine: parseInt(e.ordine) >= ordine ? parseInt(e.ordine) + 1 : parseInt(e.ordine)
+        }));
+        return [...rest, ...updated, newEx];
+      });
+    } else {
+      setExs(prev => [...prev, newEx]);
+    }
   };
 
   const addSeduta = () => {
@@ -914,8 +959,20 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
 
   const removeSeduta = (sed) => {
     if (!window.confirm(`Eliminare "${sed}" con tutti i suoi esercizi?`)) return;
-    setExs(prev => prev.filter(e => e.seduta !== sed));
+    setExs(prev => {
+      const remaining = prev.filter(e => e.seduta !== sed);
+      // Rinomina sedute rimanenti in ordine
+      const sedRimanenti = [...new Set(remaining.map(e => e.seduta))].filter(Boolean);
+      return remaining.map(e => {
+        const idx = sedRimanenti.indexOf(e.seduta);
+        const nuovaSeduta = `Seduta ${idx + 1}`;
+        return { ...e, seduta: nuovaSeduta };
+      });
+    });
   };
+
+  // Sostituzione esercizio con dropdown libreria
+  const [showDropdown, setShowDropdown] = useState(null);
 
   return (
     <div>
@@ -943,80 +1000,128 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
       </div>
 
       {/* ESERCIZI PER SEDUTA */}
-      {sedute.map(sed => (
-        <div key={sed} style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: T.primary, letterSpacing: "0.5px", textTransform: "uppercase" }}>{sed}</div>
-            <button onClick={() => removeSeduta(sed)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.danger }}>
-              <Trash2 size={11} /> Rimuovi seduta
-            </button>
-          </div>
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "28px 2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", background: T.bg, fontSize: 10, fontWeight: 700, color: T.textMut, letterSpacing: "0.5px" }}>
-              <span>#</span><span>ESERCIZIO</span><span style={{textAlign:"center"}}>SERIE</span><span style={{textAlign:"center"}}>REPS</span><span style={{textAlign:"center"}}>KG</span><span style={{textAlign:"center"}}>REC.</span><span>NOTE</span><span></span>
+      {sedute.map(sed => {
+        const sedExs = exs.filter(e => e.seduta === sed).sort((a, b) => parseInt(a.ordine || 0) - parseInt(b.ordine || 0));
+        const q = searchBySed[sed] || "";
+        const libSed = getLibFiltered(q);
+        return (
+          <div key={sed} style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: T.primary, letterSpacing: "0.5px", textTransform: "uppercase" }}>{sed}</div>
+              <button onClick={() => removeSeduta(sed)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.danger }}>
+                <Trash2 size={11} /> Rimuovi seduta
+              </button>
             </div>
-            {exs.filter(e => e.seduta === sed).map((ex, ri) => (
-              <div key={ex._id} style={{ display: "grid", gridTemplateColumns: "28px 2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", alignItems: "center", borderTop: `1px solid ${T.border}`, background: ri % 2 === 0 ? "#fff" : T.bg + "88" }}>
-                <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
-                {["esercizio","serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
-                  <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
-                    style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: fi === 0 ? 700 : 400, textAlign: fi > 0 && fi < 5 ? "center" : "left" }}
-                    onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
-                    onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-                  />
-                ))}
-                <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
+            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+              {/* Header colonne */}
+              <div style={{ display: "grid", gridTemplateColumns: "24px 24px 2fr 55px 70px 70px 60px 1fr 28px", gap: 4, padding: "8px 12px", background: T.bg, fontSize: 10, fontWeight: 700, color: T.textMut }}>
+                <span></span><span>#</span><span>ESERCIZIO</span><span style={{textAlign:"center"}}>SERIE</span><span style={{textAlign:"center"}}>REPS</span><span style={{textAlign:"center"}}>KG</span><span style={{textAlign:"center"}}>REC.</span><span>NOTE</span><span></span>
               </div>
-            ))}
-            {/* Aggiungi da libreria per questa seduta */}
-            <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI ESERCIZIO</div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {libFiltered.slice(0, 15).map((ex, i) => (
-                  <button key={i} onClick={() => addFromLib(ex, sed)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.text, transition: "all 0.1s" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-                  >
-                    + {ex.esercizio}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      ))}
 
-      {/* CERCA NELLA LIBRERIA */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 8 }}>CERCA NELLA LIBRERIA</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 12px", marginBottom: 10 }}>
-          <Search size={14} color={T.textMut} />
-          <input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder="Cerca esercizio..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {libFiltered.map((ex, i) => (
-            <button key={i} onClick={() => addFromLib(ex)} style={{ padding: "5px 11px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.text }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-            >
-              + {ex.esercizio} <span style={{ fontSize: 10, color: T.textMut }}>({ex.muscolo})</span>
-            </button>
-          ))}
-        </div>
-      </div>
+              {sedExs.map((ex, ri) => (
+                <div key={ex._id}>
+                  <div style={{ display: "grid", gridTemplateColumns: "24px 24px 2fr 55px 70px 70px 60px 1fr 28px", gap: 4, padding: "6px 12px", alignItems: "center", borderTop: `1px solid ${T.border}`, background: ri % 2 === 0 ? "#fff" : T.bg + "88" }}>
+                    {/* Frecce su/giù */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <button onClick={() => moveEx(ex._id, -1)} disabled={ri === 0} style={{ background: "none", border: "none", cursor: ri === 0 ? "default" : "pointer", color: ri === 0 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▲</button>
+                      <button onClick={() => moveEx(ex._id, 1)} disabled={ri === sedExs.length - 1} style={{ background: "none", border: "none", cursor: ri === sedExs.length - 1 ? "default" : "pointer", color: ri === sedExs.length - 1 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▼</button>
+                    </div>
+                    <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
+
+                    {/* Nome esercizio con dropdown sostituzione */}
+                    <div style={{ position: "relative" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <input value={ex.esercizio || ""} onChange={e => updateEx(ex._id, "esercizio", e.target.value)}
+                          style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700 }}
+                          onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                          onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                        />
+                        <button onClick={() => setShowDropdown(showDropdown === ex._id ? null : ex._id)} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 5, cursor: "pointer", padding: "2px 5px", fontSize: 10, color: T.textSec, flexShrink: 0 }} title="Scegli dalla libreria">
+                          📚
+                        </button>
+                      </div>
+                      {showDropdown === ex._id && (
+                        <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 100, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, width: 280, maxHeight: 220, overflow: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
+                          <div style={{ padding: "8px 10px", borderBottom: `1px solid ${T.border}` }}>
+                            <input autoFocus placeholder="Cerca..." onChange={e => setSearchEx(e.target.value)}
+                              style={{ width: "100%", border: `1px solid ${T.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none" }} />
+                          </div>
+                          <div>
+                            {Object.entries(libByMuscolo).map(([muscolo, items]) => {
+                              const filtered = items.filter(i => !searchEx || i.esercizio.toLowerCase().includes(searchEx.toLowerCase()));
+                              if (!filtered.length) return null;
+                              return (
+                                <div key={muscolo}>
+                                  <div style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800, color: T.primary, background: T.bg, letterSpacing: "0.5px" }}>{muscolo.toUpperCase()}</div>
+                                  {filtered.map((lib, li) => (
+                                    <button key={li} onClick={() => { updateEx(ex._id, "esercizio", lib.esercizio); updateEx(ex._id, "muscolo", lib.muscolo); setShowDropdown(null); setSearchEx(""); }}
+                                      style={{ width: "100%", padding: "7px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 12, color: T.text, display: "flex", justifyContent: "space-between" }}
+                                      onMouseEnter={e => e.currentTarget.style.background = T.bg}
+                                      onMouseLeave={e => e.currentTarget.style.background = "none"}
+                                    >
+                                      <span>{lib.esercizio}</span>
+                                      <span style={{ fontSize: 10, color: T.textMut }}>{lib.muscolo}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
+                      <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
+                        style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", textAlign: fi < 4 ? "center" : "left" }}
+                        onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                        onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                      />
+                    ))}
+                    <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
+                  </div>
+                </div>
+              ))}
+
+              {/* Aggiungi esercizio dalla libreria per questa seduta */}
+              <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI A {sed.toUpperCase()}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <input value={q} onChange={e => setSearchBySed(p => ({ ...p, [sed]: e.target.value }))}
+                    placeholder="Cerca per nome o muscolo..."
+                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none", background: "#fff" }} />
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {libSed.slice(0, 20).map((ex, i) => (
+                    <button key={i} onClick={() => addFromLib(ex, sed)}
+                      style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.text }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
+                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
+                    >
+                      + {ex.esercizio} <span style={{ fontSize: 9, color: T.textMut }}>({ex.muscolo})</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
       {/* AGGIUNGI SEDUTA */}
       <button onClick={addSeduta} style={{ display: "flex", alignItems: "center", gap: 7, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 600, marginBottom: 20, width: "100%", justifyContent: "center" }}>
         <Plus size={15} /> Aggiungi nuova seduta
       </button>
 
-      {/* FOOTER AZIONI */}
+      {/* FOOTER */}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <BtnSecondary onClick={onCancel}>Annulla</BtnSecondary>
         <BtnPrimary onClick={() => onSave(info, exs)} loading={saving}><Save size={14} /> Salva scheda</BtnPrimary>
       </div>
     </div>
   );
+}
+
 }
 
 /* ─────────────────────────────────────────────
@@ -1268,6 +1373,123 @@ function EserciziView({ data, onRefresh }) {
   );
 }
 
+
+/* ─────────────────────────────────────────────
+   IMPOSTAZIONI — Corsi e Professionisti
+   ───────────────────────────────────────────── */
+function ImpostazioniView({ data, onRefresh }) {
+  const { servizi = [] } = data;
+  const [saving, setSaving] = useState(false);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [delLoading, setDelLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
+
+  const corsi = servizi.filter(s => s.tipo === "corso");
+  const professionisti = servizi.filter(s => s.tipo === "professionista");
+
+  const handleAdd = async () => {
+    if (!form.nome) { alert("Inserisci il nome"); return; }
+    setSaving(true);
+    try {
+      await writeViaScript("addServizio", { servizio: form });
+      await onRefresh();
+      setShowForm(false);
+      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async () => {
+    setDelLoading(true);
+    try {
+      await writeViaScript("deleteServizio", { servizio: confirmDel });
+      await onRefresh();
+      setConfirmDel(null);
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setDelLoading(false); }
+  };
+
+  const ServiceCard = ({ items, title, emoji }) => (
+    <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 18 }}>
+      <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 18 }}>{emoji}</span>
+        <span style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{title}</span>
+        <span style={{ marginLeft: 4, fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: T.bg, color: T.textSec }}>{items.length}</span>
+      </div>
+      <div style={{ padding: "12px 20px" }}>
+        {items.length === 0 ? (
+          <p style={{ fontSize: 13, color: T.textMut, margin: 0 }}>Nessun elemento. Aggiungine uno con il tasto qui sopra.</p>
+        ) : items.map((s, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < items.length - 1 ? `1px solid ${T.border}` : "none" }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
+              {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
+              {s.contatto && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
+            </div>
+            <button onClick={() => setConfirmDel(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
+              <Trash2 size={12} /> Elimina
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      {confirmDel && (
+        <ConfirmModal
+          message={`Eliminare "${confirmDel.nome}"?`}
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDel(null)}
+          loading={delLoading}
+        />
+      )}
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>La Palestra</h1>
+          <p style={{ fontSize: 13.5, color: T.textSec }}>Gestisci corsi e professionisti</p>
+        </div>
+        <button onClick={() => setShowForm(v => !v)} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13.5, fontWeight: 700 }}>
+          <Plus size={17} /> Aggiungi
+        </button>
+      </div>
+
+      {/* FORM AGGIUNTA */}
+      {showForm && (
+        <div style={{ background: T.card, border: `1px solid ${T.primaryBorder}`, borderRadius: 14, padding: "22px 24px", marginBottom: 22, boxShadow: "0 4px 20px rgba(255,107,0,0.08)" }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 18 }}>➕ Nuovo elemento</div>
+          <div style={{ marginBottom: 12 }}>
+            <Field label="TIPO">
+              <select value={form.tipo} onChange={e => setForm(p => ({ ...p, tipo: e.target.value }))}
+                style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
+                <option value="corso">Corso</option>
+                <option value="professionista">Professionista</option>
+              </select>
+            </Field>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+            <Field label="NOME *"><Input value={form.nome} onChange={v => setForm(p => ({ ...p, nome: v }))} placeholder={form.tipo === "corso" ? "Es: Pilates" : "Es: Dott. Rossi"} /></Field>
+            <Field label="CONTATTO"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder={form.tipo === "corso" ? "Es: Istruttore: Laura" : "Es: 333 0000000"} /></Field>
+          </div>
+          <Field label="DESCRIZIONE">
+            <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder={form.tipo === "corso" ? "Es: Lezioni ogni martedì e giovedì" : "Es: Fisioterapista specializzato"} />
+          </Field>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
+            <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
+            <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Salva</BtnPrimary>
+          </div>
+        </div>
+      )}
+
+      <ServiceCard items={corsi} title="I nostri corsi" emoji="💪" />
+      <ServiceCard items={professionisti} title="I nostri professionisti" emoji="🏥" />
+    </div>
+  );
+}
+
 /* ─────────────────────────────────────────────
    LOADING / ERROR
    ───────────────────────────────────────────── */
@@ -1347,6 +1569,7 @@ export default function AdminPanel() {
         {page === "clienteDetail" && selectedCliente && <ClienteDetail cliente={selectedCliente} data={data} onBack={() => navigate("clienti")} onWhatsApp={setWaCliente} onRefresh={loadData} />}
         {page === "schede"        && <SchedeView    data={data} onRefresh={loadData} />}
         {page === "esercizi"      && <EserciziView  data={data} onRefresh={loadData} />}
+        {page === "impostazioni"   && <ImpostazioniView data={data} onRefresh={loadData} />}
       </div>
     </div>
   );
