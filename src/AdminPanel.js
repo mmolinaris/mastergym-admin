@@ -716,12 +716,39 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
   const [openPassate, setOpenPassate] = useState({});
   const [confirmDel,  setConfirmDel]  = useState(null);
   const [delLoading,  setDelLoading]  = useState(false);
+  const [editMode,    setEditMode]    = useState(false);
+  const [savingEdit,  setSavingEdit]  = useState(false);
 
   const handleDeletePassata = async () => {
     setDelLoading(true);
     try { await writeViaScript("deleteSchedaPassata", { codiceCliente: cliente.codice, schedaId: confirmDel }); await onRefresh(); setConfirmDel(null); }
     catch (err) { alert("Errore: " + err.message); }
     finally { setDelLoading(false); }
+  };
+
+  const handleSaveEdit = async (info, exs) => {
+    if (!schedaAttiva) return;
+    setSavingEdit(true);
+    try {
+      // Elimina esercizi vecchi e riscrivi
+      await writeViaScript("deleteSchedaEsercizi", { schedaId: schedaAttiva.scheda_id });
+      await writeViaScript("creaSchedaDaTemplate", {
+        cliente_codice: cliente.codice,
+        scheda_attiva_old: "",
+        scheda: {
+          scheda_id: schedaAttiva.scheda_id,
+          nome_scheda: info.nome_scheda,
+          obiettivo: info.obiettivo,
+          data_creazione: info.data_inizio,
+          data_scadenza: info.data_scadenza,
+          note_trainer: info.note_trainer,
+        },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaAttiva.scheda_id })),
+      });
+      await onRefresh();
+      setEditMode(false);
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSavingEdit(false); }
   };
 
   const days = daysUntil(schedaAttiva?.data_scadenza);
@@ -753,12 +780,30 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
 
       <SectionBox title="Scheda attiva" icon="🟢"
         action={schedaAttiva && (
-          <button onClick={() => printScheda(schedaAttiva, exForScheda(schedaAttiva.scheda_id), cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-            <Printer size={14} /> Stampa
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {!editMode && (
+              <button onClick={() => setEditMode(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.primaryLight, color: T.primary, border: `1px solid ${T.primaryBorder}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                <Edit3 size={14} /> Modifica
+              </button>
+            )}
+            <button onClick={() => printScheda(schedaAttiva, exForScheda(schedaAttiva.scheda_id), cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+              <Printer size={14} /> Stampa
+            </button>
+          </div>
         )}
       >
-        {schedaAttiva ? (
+        {editMode && schedaAttiva ? (
+          <EditorScheda
+            scheda={schedaAttiva}
+            esercizi={exForScheda(schedaAttiva.scheda_id)}
+            libreria={data.libreria || []}
+            clienti={data.clienti}
+            cliente={cliente}
+            onSave={handleSaveEdit}
+            onCancel={() => setEditMode(false)}
+            saving={savingEdit}
+          />
+        ) : schedaAttiva ? (
           <div>
             <div style={{ background: T.bg, borderRadius: 10, padding: "13px 16px", marginBottom: 14, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
               <div>
@@ -784,7 +829,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
               );
             })}
           </div>
-        ) : <EmptyState icon={BookOpen} msg="Nessuna scheda attiva. Vai in Schede per crearne una." />}
+        ) : <EmptyState icon={BookOpen} msg="Nessuna scheda attiva. Vai nel dettaglio cliente e crea una nuova scheda." />}
       </SectionBox>
 
       <SectionBox title="Schede passate" icon="🔘" badge={schedePassate.length > 0 ? `${schedePassate.length}` : undefined}>
@@ -815,171 +860,68 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
   );
 }
 
+
 /* ─────────────────────────────────────────────
-   SCHEDE VIEW
+   EDITOR SCHEDA — usato sia per nuova che modifica
    ───────────────────────────────────────────── */
-function SchedeView({ data, onRefresh }) {
-  const { schede, clienti, esercizi, libreria } = data;
-  const [step,      setStep]      = useState("list"); // list | pickTemplate | compose
-  const [selTpl,    setSelTpl]    = useState(null);
-  const [saving,    setSaving]    = useState(false);
-  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: today(), data_scadenza: inMonths(2), note_trainer: "", cliente_codice: "" });
-  const [exs,  setExs]  = useState([]);
-  const [confirmDel, setConfirmDel] = useState(null);
-  const [delLoading,  setDelLoading] = useState(false);
-  const [openScheda, setOpenScheda] = useState({});
+function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, onSave, onCancel, saving }) {
+  const today2 = new Date().toISOString().split("T")[0];
+  const in2m   = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
+
+  const [info, setInfo] = useState({
+    nome_scheda:   scheda?.nome_scheda   || "",
+    obiettivo:     scheda?.obiettivo     || "",
+    data_inizio:   scheda?.data_creazione || today2,
+    data_scadenza: scheda?.data_scadenza  || in2m,
+    note_trainer:  scheda?.note_trainer   || "",
+    cliente_codice: cliente?.codice       || "",
+  });
+
+  const [exs, setExs] = useState(() =>
+    (esErca || []).map((e, i) => ({ ...e, seduta: e.seduta || e.giorno || "Seduta 1", _id: i }))
+  );
   const [searchEx, setSearchEx] = useState("");
 
-  const pickTemplate = (t) => {
-    setSelTpl(t);
-    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
-    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
-    setStep("compose");
-  };
+  const sedute = useMemo(() => [...new Set(exs.map(e => e.seduta))].filter(Boolean), [exs]);
+
+  const libFiltered = useMemo(() => {
+    const q = searchEx.toLowerCase();
+    if (!q) return libreria.slice(0, 30);
+    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q)).slice(0, 30);
+  }, [libreria, searchEx]);
 
   const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
   const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
 
-  // Aggiungi esercizio da libreria
-  const libFiltered = useMemo(() => {
-    const q = searchEx.toLowerCase();
-    if (!q) return libreria.slice(0, 20);
-    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q)).slice(0, 20);
-  }, [libreria, searchEx]);
-
-  const addFromLib = (ex) => {
-    const sedute = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
-    setExs(prev => [...prev, { ...ex, seduta: sedute[0] || "Seduta 1", serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "", _id: Date.now() }]);
+  const addFromLib = (ex, sedutaTarget) => {
+    const target = sedutaTarget || sedute[0] || "Seduta 1";
+    const ordine = exs.filter(e => e.seduta === target).length + 1;
+    setExs(prev => [...prev, {
+      esercizio: ex.esercizio, muscolo: ex.muscolo, seduta: target,
+      serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
+      ordine, _id: Date.now() + Math.random()
+    }]);
   };
 
-  const handleSave = async () => {
-    if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
-    if (!info.cliente_codice) { alert("Seleziona un cliente"); return; }
-    setSaving(true);
-    try {
-      const schedaId = genId("SCH");
-      const clienteSel = clienti.find(c => c.codice === info.cliente_codice);
-      await writeViaScript("creaSchedaDaTemplate", {
-        cliente_codice:    info.cliente_codice,
-        scheda_attiva_old: clienteSel?.scheda_attiva || "",
-        scheda: { scheda_id: schedaId, nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
-        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
-      });
-      await onRefresh();
-      setStep("list");
-      setInfo({ nome_scheda: "", obiettivo: "", data_inizio: today(), data_scadenza: inMonths(2), note_trainer: "", cliente_codice: "" });
-      setExs([]);
-    } catch (err) { alert("Errore: " + err.message); }
-    finally { setSaving(false); }
+  const addSeduta = () => {
+    const n = sedute.length + 1;
+    setExs(prev => [...prev, {
+      esercizio: "Nuovo esercizio", muscolo: "", seduta: `Seduta ${n}`,
+      serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
+      ordine: 1, _id: Date.now()
+    }]);
   };
 
-  const handleDeleteScheda = async () => {
-    setDelLoading(true);
-    try { await writeViaScript("deleteSchedaCompleta", { schedaId: confirmDel }); await onRefresh(); setConfirmDel(null); }
-    catch (err) { alert("Errore: " + err.message); }
-    finally { setDelLoading(false); }
+  const removeSeduta = (sed) => {
+    if (!window.confirm(`Eliminare "${sed}" con tutti i suoi esercizi?`)) return;
+    setExs(prev => prev.filter(e => e.seduta !== sed));
   };
 
-  // LIST
-  if (step === "list") return (
-    <div>
-      {confirmDel && <ConfirmModal message={`Eliminare la scheda "${schede.find(s => s.scheda_id === confirmDel)?.nome_scheda}"?`} onConfirm={handleDeleteScheda} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Schede</h1>
-          <p style={{ fontSize: 13.5, color: T.textSec }}>{schede.length} schede create</p>
-        </div>
-        <button onClick={() => setStep("pickTemplate")} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13.5, fontWeight: 700 }}>
-          <Plus size={17} /> Nuova scheda
-        </button>
-      </div>
-
-      {schede.length === 0 ? <EmptyState icon={ClipboardList} msg="Nessuna scheda creata. Clicca 'Nuova scheda' per iniziare." /> : schede.map(s => {
-        const exScheda = esercizi.filter(e => e.scheda_id === s.scheda_id);
-        const sedute = [...new Set(exScheda.map(e => e.seduta || e.giorno))].filter(Boolean);
-        const clientiAssegnati = clienti.filter(c => c.scheda_attiva === s.scheda_id);
-        const days = daysUntil(s.data_scadenza);
-        const open = openScheda[s.scheda_id];
-        return (
-          <div key={s.scheda_id} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 12 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "18px 20px" }}>
-              <button onClick={() => setOpenScheda(p => ({ ...p, [s.scheda_id]: !p[s.scheda_id] }))} style={{ flex: 1, display: "flex", alignItems: "center", gap: 14, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
-                {open ? <ChevronUp size={18} color={T.textMut} /> : <ChevronDown size={18} color={T.textMut} />}
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: T.text }}>{s.nome_scheda}</div>
-                  <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.obiettivo} · {sedute.length} sedute · {exScheda.length} esercizi · {fmt(s.data_creazione)} → {fmt(s.data_scadenza)}</div>
-                </div>
-              </button>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
-                {clientiAssegnati.length > 0 && <Badge color={T.primary} bg={T.primaryLight}>{clientiAssegnati.map(c => c.nome).join(", ")}</Badge>}
-                {days <= 7 && days > 0 && <Badge color={T.warning} bg={T.warningLight}>Scade tra {days}g</Badge>}
-                <button onClick={() => printScheda(s, exScheda, clientiAssegnati[0])} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.bg, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.textSec }}>
-                  <Printer size={13} /> Stampa
-                </button>
-                <button onClick={() => setConfirmDel(s.scheda_id)} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 11px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
-                  <Trash2 size={13} /> Elimina
-                </button>
-              </div>
-            </div>
-            {open && (
-              <div style={{ borderTop: `1px solid ${T.border}` }}>
-                {sedute.map(sed => {
-                  const dayEx = exScheda.filter(e => (e.seduta || e.giorno) === sed).sort((a, b) => parseInt(a.ordine || 0) - parseInt(b.ordine || 0));
-                  return (
-                    <div key={sed}>
-                      <div style={{ padding: "10px 20px", background: T.bg, fontSize: 13, fontWeight: 700, color: T.primary }}>{sed}</div>
-                      <div style={{ padding: "0 20px 10px" }}><EserciziTable esercizi={dayEx} /></div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-
-  // PICK TEMPLATE
-  if (step === "pickTemplate") return (
-    <div>
-      <button onClick={() => setStep("list")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 24, padding: 0 }}>
-        <ArrowLeft size={16} /> Torna alle schede
-      </button>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 6 }}>Scegli un template</h1>
-      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 24 }}>Seleziona la base di partenza. Potrai modificare tutti gli esercizi nel passo successivo.</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {TEMPLATES.map(t => (
-          <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; e.currentTarget.style.boxShadow = `0 4px 20px ${t.colore}22`; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
-          >
-            <div style={{ width: 52, height: 52, borderRadius: 13, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Dumbbell size={24} color={t.colore} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{t.nome}</div>
-              <div style={{ fontSize: 13, color: T.textSec, marginTop: 3 }}>{t.descrizione}</div>
-            </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "4px 12px", borderRadius: 8 }}>{t.esercizi.length} esercizi</div>
-            <ChevronRight size={18} color={T.textMut} />
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  // COMPOSE
   return (
     <div>
-      <button onClick={() => setStep("pickTemplate")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 24, padding: 0 }}>
-        <ArrowLeft size={16} /> Cambia template
-      </button>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 20 }}>Componi la scheda</h1>
-
       {/* INFO SCHEDA */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 14 }}>INFO SCHEDA</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 14 }}>INFO SCHEDA</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
           <Field label="NOME SCHEDA *"><Input value={info.nome_scheda} onChange={v => setInfo(p => ({ ...p, nome_scheda: v }))} placeholder="Es: Tonificazione Marco" /></Field>
           <Field label="OBIETTIVO"><Input value={info.obiettivo} onChange={v => setInfo(p => ({ ...p, obiettivo: v }))} placeholder="Es: Tonificazione" /></Field>
@@ -989,26 +931,33 @@ function SchedeView({ data, onRefresh }) {
           <Field label="DATA SCADENZA"><Input type="date" value={info.data_scadenza} onChange={v => setInfo(p => ({ ...p, data_scadenza: v }))} /></Field>
           <Field label="NOTE TRAINER"><Input value={info.note_trainer} onChange={v => setInfo(p => ({ ...p, note_trainer: v }))} placeholder="Note generali..." /></Field>
         </div>
-        <Field label="ASSEGNA A CLIENTE *">
-          <select value={info.cliente_codice} onChange={e => setInfo(p => ({ ...p, cliente_codice: e.target.value }))}
-            style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
-            <option value="">Seleziona cliente...</option>
-            {clienti.map(c => <option key={c.codice} value={c.codice}>{c.nome} {c.cognome} ({c.codice})</option>)}
-          </select>
-        </Field>
+        {!cliente && (
+          <Field label="ASSEGNA A CLIENTE *">
+            <select value={info.cliente_codice} onChange={e => setInfo(p => ({ ...p, cliente_codice: e.target.value }))}
+              style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
+              <option value="">Seleziona cliente...</option>
+              {clienti.map(c => <option key={c.codice} value={c.codice}>{c.nome} {c.cognome} ({c.codice})</option>)}
+            </select>
+          </Field>
+        )}
       </div>
 
       {/* ESERCIZI PER SEDUTA */}
-      {[...new Set(exs.map(e => e.seduta))].map(seduta => (
-        <div key={seduta} style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: selTpl?.colore || T.primary, letterSpacing: "0.5px", marginBottom: 8, textTransform: "uppercase" }}>{seduta}</div>
+      {sedute.map(sed => (
+        <div key={sed} style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.primary, letterSpacing: "0.5px", textTransform: "uppercase" }}>{sed}</div>
+            <button onClick={() => removeSeduta(sed)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.danger }}>
+              <Trash2 size={11} /> Rimuovi seduta
+            </button>
+          </div>
           <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "28px 2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", background: T.bg, fontSize: 10, fontWeight: 700, color: T.textMut, letterSpacing: "0.5px" }}>
               <span>#</span><span>ESERCIZIO</span><span style={{textAlign:"center"}}>SERIE</span><span style={{textAlign:"center"}}>REPS</span><span style={{textAlign:"center"}}>KG</span><span style={{textAlign:"center"}}>REC.</span><span>NOTE</span><span></span>
             </div>
-            {exs.filter(e => e.seduta === seduta).map((ex, ri) => (
+            {exs.filter(e => e.seduta === sed).map((ex, ri) => (
               <div key={ex._id} style={{ display: "grid", gridTemplateColumns: "28px 2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", alignItems: "center", borderTop: `1px solid ${T.border}`, background: ri % 2 === 0 ? "#fff" : T.bg + "88" }}>
-                <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ex.ordine}</span>
+                <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
                 {["esercizio","serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
                   <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
                     style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: fi === 0 ? 700 : 400, textAlign: fi > 0 && fi < 5 ? "center" : "left" }}
@@ -1019,32 +968,146 @@ function SchedeView({ data, onRefresh }) {
                 <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
               </div>
             ))}
+            {/* Aggiungi da libreria per questa seduta */}
+            <div style={{ padding: "10px 14px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI ESERCIZIO</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {libFiltered.slice(0, 15).map((ex, i) => (
+                  <button key={i} onClick={() => addFromLib(ex, sed)} style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.text, transition: "all 0.1s" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
+                  >
+                    + {ex.esercizio}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       ))}
 
-      {/* AGGIUNGI DA LIBRERIA */}
-      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 20px", marginBottom: 20 }}>
-        <div style={{ fontSize: 13, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 12 }}>AGGIUNGI DALLA LIBRERIA</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 9, padding: "8px 14px", marginBottom: 12 }}>
-          <Search size={15} color={T.textMut} />
-          <input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder="Cerca esercizio nella libreria..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
+      {/* CERCA NELLA LIBRERIA */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 8 }}>CERCA NELLA LIBRERIA</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 8, padding: "7px 12px", marginBottom: 10 }}>
+          <Search size={14} color={T.textMut} />
+          <input value={searchEx} onChange={e => setSearchEx(e.target.value)} placeholder="Cerca esercizio..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {libFiltered.map((ex, i) => (
-            <button key={i} onClick={() => addFromLib(ex)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 8, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.text, transition: "all 0.1s" }}
+            <button key={i} onClick={() => addFromLib(ex)} style={{ padding: "5px 11px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.text }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
             >
-              <Plus size={11} /> {ex.esercizio} <span style={{ fontSize: 10, color: T.textMut }}>({ex.muscolo})</span>
+              + {ex.esercizio} <span style={{ fontSize: 10, color: T.textMut }}>({ex.muscolo})</span>
             </button>
           ))}
         </div>
       </div>
 
+      {/* AGGIUNGI SEDUTA */}
+      <button onClick={addSeduta} style={{ display: "flex", alignItems: "center", gap: 7, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 600, marginBottom: 20, width: "100%", justifyContent: "center" }}>
+        <Plus size={15} /> Aggiungi nuova seduta
+      </button>
+
+      {/* FOOTER AZIONI */}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-        <BtnSecondary onClick={() => setStep("list")}>Annulla</BtnSecondary>
-        <BtnPrimary onClick={handleSave} loading={saving}><Save size={14} /> Salva e assegna al cliente</BtnPrimary>
+        <BtnSecondary onClick={onCancel}>Annulla</BtnSecondary>
+        <BtnPrimary onClick={() => onSave(info, exs)} loading={saving}><Save size={14} /> Salva scheda</BtnPrimary>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   SCHEDE VIEW
+   ───────────────────────────────────────────── */
+function SchedeView({ data, onRefresh }) {
+  const { clienti, esercizi, libreria } = data;
+  const [selTpl,   setSelTpl]   = useState(null); // null = lista template, obj = compose
+  const [saving,   setSaving]   = useState(false);
+  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: new Date().toISOString().split("T")[0], data_scadenza: new Date(Date.now() + 60*24*3600000).toISOString().split("T")[0], note_trainer: "", cliente_codice: "" });
+  const [exs, setExs] = useState([]);
+
+  const pickTemplate = (t) => {
+    setSelTpl(t);
+    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
+    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
+  };
+
+  const handleSave = async (info2, exs2) => {
+    if (!info2.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
+    if (!info2.cliente_codice) { alert("Seleziona un cliente"); return; }
+    setSaving(true);
+    try {
+      const schedaId = genId("SCH");
+      const clienteSel = clienti.find(c => c.codice === info2.cliente_codice);
+      await writeViaScript("creaSchedaDaTemplate", {
+        cliente_codice: info2.cliente_codice,
+        scheda_attiva_old: clienteSel?.scheda_attiva || "",
+        scheda: { scheda_id: schedaId, nome_scheda: info2.nome_scheda, obiettivo: info2.obiettivo, data_creazione: info2.data_inizio, data_scadenza: info2.data_scadenza, note_trainer: info2.note_trainer },
+        esercizi: exs2.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+      });
+      await onRefresh();
+      setSelTpl(null);
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSaving(false); }
+  };
+
+  // EDITOR SCHEDA
+  if (selTpl) return (
+    <div>
+      <button onClick={() => setSelTpl(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 24, padding: 0 }}>
+        <ArrowLeft size={16} /> Torna ai template
+      </button>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 6 }}>
+        Componi scheda — <span style={{ color: selTpl.colore }}>{selTpl.nome}</span>
+      </h1>
+      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 20 }}>Modifica gli esercizi, assegna al cliente e salva.</p>
+      <EditorScheda
+        scheda={{ nome_scheda: selTpl.nome, obiettivo: selTpl.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza }}
+        esercizi={exs}
+        libreria={libreria || []}
+        clienti={clienti}
+        cliente={null}
+        onSave={handleSave}
+        onCancel={() => setSelTpl(null)}
+        saving={saving}
+      />
+    </div>
+  );
+
+  // LISTA TEMPLATE
+  return (
+    <div>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Schede</h1>
+        <p style={{ fontSize: 13.5, color: T.textSec }}>Scegli un template, personalizzalo e assegnalo a un cliente</p>
+      </div>
+
+      <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 12, padding: "14px 18px", marginBottom: 24, fontSize: 13, color: T.primary, fontWeight: 600 }}>
+        💡 Seleziona un template per creare una nuova scheda. Le schede assegnate si trovano nel dettaglio di ogni cliente.
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {TEMPLATES.map(t => (
+          <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "22px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; e.currentTarget.style.boxShadow = `0 4px 20px ${t.colore}22`; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
+          >
+            <div style={{ width: 56, height: 56, borderRadius: 14, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Dumbbell size={26} color={t.colore} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{t.nome}</div>
+              <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{t.descrizione}</div>
+              <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>{t.esercizi.length} esercizi · {t.sedute.length} sedute</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "5px 14px", borderRadius: 8 }}>Usa template →</div>
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   );
