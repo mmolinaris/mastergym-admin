@@ -12,7 +12,7 @@ import {
    ───────────────────────────────────────────── */
 const SHEET_ID   = "144-i_O8EGeL51ku9oi7n44oS1KGQY2cutIrulSVDJcw";
 const API_KEY    = "AIzaSyDEoQi1P3VVocd7Yokkw8by8PLWq-t1IV4";
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFzrYPbupoWLKx3SslQZH7ZIToV_rf23iynPla5x09GvmG7oemtEd_O3qlraBuA9ic/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5tKZ9pNCI4BqNLasU3XIFcl-RZYiQY799tUj7R_kNFlGmv3ucNPXPamylFGH0qXNS/exec";
 const BASE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 const APP_URL    = "https://mastergymcanelli.vercel.app";
 
@@ -189,7 +189,7 @@ const T = {
   danger: "#EF4444", dangerLight: "#FEF2F2",
   success: "#10B981", successLight: "#ECFDF5",
   warning: "#F59E0B", warningLight: "#FFFBEB",
-  sidebar: "#18181B", sidebarBorder: "#27272A",
+  sidebar: "#3D3D3D", sidebarBorder: "#4A4A4A",
 };
 
 /* ─────────────────────────────────────────────
@@ -308,10 +308,10 @@ function LoginScreen({ onLogin }) {
     <div style={{ minHeight: "100vh", background: T.sidebar, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ background: T.card, borderRadius: 20, padding: "40px 36px", width: "100%", maxWidth: 380, boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 14, background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Dumbbell size={28} color="#fff" strokeWidth={2.5} />
+          <div style={{ width: 80, height: 80, borderRadius: 20, overflow: "hidden", margin: "0 auto 16px" }}>
+            <img src="https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>GymBoard Admin</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>ASD Master Gym</div>
           <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>Accedi al pannello di gestione</div>
         </div>
 
@@ -356,8 +356,8 @@ function Sidebar({ active, onNavigate, config, onLogout }) {
     <div style={{ width: 232, minHeight: "100vh", background: T.sidebar, display: "flex", flexDirection: "column", flexShrink: 0, borderRight: `1px solid ${T.sidebarBorder}` }}>
       <div style={{ padding: "22px 18px 18px", borderBottom: `1px solid ${T.sidebarBorder}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 38, height: 38, borderRadius: 9, background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Dumbbell size={20} color="#fff" strokeWidth={2.5} />
+          <div style={{ width: 44, height: 44, borderRadius: 9, overflow: "hidden", flexShrink: 0 }}>
+            <img src={config?.logo_url || "https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png"} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </div>
           <div>
             <div style={{ color: "#fff", fontSize: 14, fontWeight: 800, lineHeight: 1.2 }}>{config?.nome_palestra || "GymBoard"}</div>
