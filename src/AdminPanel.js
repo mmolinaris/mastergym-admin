@@ -1276,156 +1276,180 @@ function SchedeView({ data, onRefresh }) {
 }
 
 /* ─────────────────────────────────────────────
-   ESERCIZI VIEW
+   ESERCIZI VIEW — gestisce solo libreria_esercizi
    ───────────────────────────────────────────── */
 function EserciziView({ data, onRefresh }) {
-  const { esercizi, schede } = data;
-  const [search,       setSearch]       = useState("");
-  const [filterScheda, setFilterScheda] = useState("all");
-  const [showForm,     setShowForm]     = useState(false);
-  const [editEx,       setEditEx]       = useState(null);
-  const [confirmDel,   setConfirmDel]   = useState(null);
-  const [delLoading,   setDelLoading]   = useState(false);
-  const [saving,       setSaving]       = useState(false);
-  const [form, setForm] = useState({ scheda_id: "", seduta: "", ordine: "", muscolo: "", esercizio: "", serie: "", ripetizioni: "", peso_suggerito: "", recupero: "", note: "", video_url: "" });
+  const { libreria = [] } = data;
+  const [search,     setSearch]     = useState("");
+  const [showForm,   setShowForm]   = useState(false);
+  const [editEx,     setEditEx]     = useState(null);
+  const [confirmDel, setConfirmDel] = useState(null);
+  const [delLoading, setDelLoading] = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const emptyForm = { esercizio: "", muscolo: "" };
+  const [form, setForm] = useState(emptyForm);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return esercizi.filter(e => {
-      const ms = !q || `${e.esercizio} ${e.muscolo || e.gruppo_muscolare}`.toLowerCase().includes(q);
-      const msc = filterScheda === "all" || e.scheda_id === filterScheda;
-      return ms && msc;
-    });
-  }, [esercizi, search, filterScheda]);
+    if (!q) return libreria;
+    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q));
+  }, [libreria, search]);
 
   const grouped = useMemo(() => {
     const g = {};
-    filtered.forEach(e => { const k = e.muscolo || e.gruppo_muscolare || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
-    return g;
+    filtered.forEach(e => { const k = e.muscolo || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
+    return Object.fromEntries(Object.entries(g).sort(([a],[b]) => a.localeCompare(b)));
   }, [filtered]);
 
   const handleAdd = async () => {
-    if (!form.esercizio) { alert("Inserisci il nome dell'esercizio"); return; }
+    if (!form.esercizio.trim()) { alert("Inserisci il nome dell'esercizio"); return; }
+    if (!form.muscolo.trim())   { alert("Inserisci il gruppo muscolare"); return; }
+    const dup = libreria.find(e => e.esercizio.trim().toLowerCase() === form.esercizio.trim().toLowerCase());
+    if (dup) { alert(`⚠️ "${dup.esercizio}" esiste già in libreria nel gruppo ${dup.muscolo}`); return; }
     setSaving(true);
-    try { await writeViaScript("addEsercizio", { esercizio: form }); await onRefresh(); setShowForm(false); setForm({ scheda_id: "", seduta: "", ordine: "", muscolo: "", esercizio: "", serie: "", ripetizioni: "", peso_suggerito: "", recupero: "", note: "", video_url: "" }); }
-    catch (err) { alert("Errore: " + err.message); }
+    try {
+      await writeViaScript("addLibreria", { esercizio: { esercizio: form.esercizio.trim(), muscolo: form.muscolo.trim() } });
+      await onRefresh();
+      setShowForm(false);
+      setForm(emptyForm);
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSaving(false); }
+  };
+
+  const handleEdit = async () => {
+    if (!editEx.esercizio.trim()) { alert("Il nome non può essere vuoto"); return; }
+    setSaving(true);
+    try {
+      await writeViaScript("updateLibreria", { esercizio: { esercizio: editEx.esercizio.trim(), muscolo: editEx.muscolo.trim() }, original: editEx._original });
+      await onRefresh();
+      setEditEx(null);
+    } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async () => {
     setDelLoading(true);
-    try { await writeViaScript("deleteEsercizio", { esercizio: confirmDel }); await onRefresh(); setConfirmDel(null); }
-    catch (err) { alert("Errore: " + err.message); }
+    try {
+      await writeViaScript("deleteLibreria", { esercizio: confirmDel });
+      await onRefresh();
+      setConfirmDel(null);
+    } catch (err) { alert("Errore: " + err.message); }
     finally { setDelLoading(false); }
   };
 
+  const muscoli = [...new Set(libreria.map(e => e.muscolo).filter(Boolean))].sort();
+
   return (
     <div>
-      {confirmDel && <ConfirmModal message={`Eliminare "${confirmDel.esercizio}"?`} onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
+      {confirmDel && <ConfirmModal message={`Eliminare "${confirmDel.esercizio}" dalla libreria?`} onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
+
       {editEx && (
         <Overlay zIndex={1100}>
-          <ModalBox maxWidth={560}>
+          <ModalBox maxWidth={420}>
             <ModalHeader title="Modifica esercizio" onClose={() => setEditEx(null)} />
             <div style={{ padding: "20px 24px", overflow: "auto", flex: 1 }}>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-                <Field label="NOME *"><Input value={editEx.esercizio || ""} onChange={v => setEditEx(p => ({ ...p, esercizio: v }))} /></Field>
-                <Field label="MUSCOLO"><Input value={editEx.muscolo || editEx.gruppo_muscolare || ""} onChange={v => setEditEx(p => ({ ...p, muscolo: v }))} /></Field>
+              <div style={{ marginBottom: 12 }}>
+                <Field label="NOME *"><Input value={editEx.esercizio} onChange={v => setEditEx(p => ({ ...p, esercizio: v }))} /></Field>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-                {[["serie","Serie"],["ripetizioni","Reps"],["peso_suggerito","Peso (kg)"],["recupero","Rec. (s)"]].map(([f,l]) => (
-                  <Field key={f} label={l}><Input value={editEx[f] || ""} onChange={v => setEditEx(p => ({ ...p, [f]: v }))} /></Field>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                <Field label="NOTE"><Input value={editEx.note || ""} onChange={v => setEditEx(p => ({ ...p, note: v }))} /></Field>
-                <Field label="VIDEO URL"><Input value={editEx.video_url || ""} onChange={v => setEditEx(p => ({ ...p, video_url: v }))} /></Field>
-              </div>
+              <Field label="GRUPPO MUSCOLARE *">
+                <select value={editEx.muscolo} onChange={e => setEditEx(p => ({ ...p, muscolo: e.target.value }))}
+                  style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
+                  {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
+                  <option value="__new__">+ Nuovo gruppo...</option>
+                </select>
+                {editEx.muscolo === "__new__" && (
+                  <Input value={editEx._newMuscolo || ""} onChange={v => setEditEx(p => ({ ...p, _newMuscolo: v }))} placeholder="Es: Avambracci" style={{ marginTop: 8 }} />
+                )}
+              </Field>
             </div>
             <ModalFooter>
               <BtnSecondary onClick={() => setEditEx(null)}>Annulla</BtnSecondary>
-              <BtnPrimary onClick={async () => { setSaving(true); try { await writeViaScript("updateEsercizio", { esercizio: editEx }); await onRefresh(); setEditEx(null); } catch (err) { alert(err.message); } finally { setSaving(false); } }} loading={saving}><Save size={14} /> Salva</BtnPrimary>
+              <BtnPrimary onClick={handleEdit} loading={saving}><Save size={14} /> Salva</BtnPrimary>
             </ModalFooter>
           </ModalBox>
         </Overlay>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+      {/* HEADER */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Esercizi</h1>
-          <p style={{ fontSize: 13.5, color: T.textSec }}>{esercizi.length} esercizi in libreria</p>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Libreria Esercizi</h1>
+          <p style={{ fontSize: 13.5, color: T.textSec }}>{libreria.length} esercizi disponibili · usati nei template schede</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13.5, fontWeight: 700 }}>
-          <Plus size={17} /> Aggiungi esercizio
+          <Plus size={17} /> Aggiungi
         </button>
       </div>
 
+      {/* BANNER INFO */}
+      <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 10, padding: "11px 16px", marginBottom: 20, fontSize: 12.5, color: T.primary, fontWeight: 600 }}>
+        💡 Questi sono gli esercizi disponibili quando crei o modifichi una scheda. Non sono legati a nessuna scheda specifica.
+      </div>
+
+      {/* FORM AGGIUNTA */}
       {showForm && (
         <div style={{ background: T.card, border: `1px solid ${T.primaryBorder}`, borderRadius: 14, padding: "22px 24px", marginBottom: 22, boxShadow: "0 4px 20px rgba(255,107,0,0.08)" }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 18 }}>➕ Nuovo esercizio</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="SCHEDA (opzionale)">
-              <select value={form.scheda_id} onChange={e => setForm(p => ({ ...p, scheda_id: e.target.value }))} style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
-                <option value="">Nessuna scheda (libero)</option>
-                {schede.map(s => <option key={s.scheda_id} value={s.scheda_id}>{s.scheda_id} — {s.nome_scheda}</option>)}
-              </select>
+          <div style={{ fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 18 }}>➕ Nuovo esercizio in libreria</div>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 18 }}>
+            <Field label="NOME ESERCIZIO *">
+              <Input value={form.esercizio} onChange={v => setForm(p => ({ ...p, esercizio: v }))} placeholder="Es: Affondo bulgaro" />
             </Field>
-            <Field label="SEDUTA"><Input value={form.seduta} onChange={v => setForm(p => ({ ...p, seduta: v }))} placeholder="Es: Seduta 1" /></Field>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 60px", gap: 12, marginBottom: 12 }}>
-            <Field label="NOME *"><Input value={form.esercizio} onChange={v => setForm(p => ({ ...p, esercizio: v }))} placeholder="Es: Panca piana" /></Field>
-            <Field label="MUSCOLO"><Input value={form.muscolo} onChange={v => setForm(p => ({ ...p, muscolo: v }))} placeholder="Es: Pettorali" /></Field>
-            <Field label="ORDINE"><Input type="number" value={form.ordine} onChange={v => setForm(p => ({ ...p, ordine: v }))} placeholder="1" /></Field>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 12 }}>
-            {[["serie","SERIE","3"],["ripetizioni","REPS","10-12"],["peso_suggerito","PESO (kg)",""],["recupero","REC. (s)","60"]].map(([f,l,ph]) => (
-              <Field key={f} label={l}><Input value={form[f]} onChange={v => setForm(p => ({ ...p, [f]: v }))} placeholder={ph} /></Field>
-            ))}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-            <Field label="NOTE"><Input value={form.note} onChange={v => setForm(p => ({ ...p, note: v }))} placeholder="Note tecniche..." /></Field>
-            <Field label="VIDEO URL"><Input value={form.video_url} onChange={v => setForm(p => ({ ...p, video_url: v }))} placeholder="https://youtube.com/..." /></Field>
+            <Field label="GRUPPO MUSCOLARE *">
+              <select value={form.muscolo} onChange={e => setForm(p => ({ ...p, muscolo: e.target.value === "__new__" ? "" : e.target.value, _newMuscolo: e.target.value === "__new__" }))}
+                style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
+                <option value="">Seleziona gruppo...</option>
+                {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
+                <option value="__new__">+ Nuovo gruppo...</option>
+              </select>
+              {form._newMuscolo && (
+                <Input value={form.muscolo === "__new__" ? "" : form.muscolo} onChange={v => setForm(p => ({ ...p, muscolo: v }))} placeholder="Es: Avambracci" style={{ marginTop: 8 }} />
+              )}
+            </Field>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
-            <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Salva</BtnPrimary>
+            <BtnSecondary onClick={() => { setShowForm(false); setForm(emptyForm); }}>Annulla</BtnSecondary>
+            <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Aggiungi alla libreria</BtnPrimary>
           </div>
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px" }}>
-          <Search size={16} color={T.textMut} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca esercizio..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: T.text, background: "transparent" }} />
-          {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={14} /></button>}
-        </div>
-        <select value={filterScheda} onChange={e => setFilterScheda(e.target.value)} style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 13, color: T.text, background: T.card, outline: "none", cursor: "pointer" }}>
-          <option value="all">Tutte le schede</option>
-          {schede.map(s => <option key={s.scheda_id} value={s.scheda_id}>{s.scheda_id} — {s.nome_scheda}</option>)}
-        </select>
+      {/* RICERCA */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px", marginBottom: 20 }}>
+        <Search size={16} color={T.textMut} />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome o muscolo..."
+          style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: T.text, background: "transparent" }} />
+        {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={14} /></button>}
       </div>
 
-      {Object.entries(grouped).length === 0 ? <EmptyState icon={Dumbbell} msg="Nessun esercizio trovato." /> : Object.entries(grouped).map(([muscolo, exs]) => (
-        <div key={muscolo} style={{ marginBottom: 18 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: T.primary, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 10 }}>{muscolo}</div>
-          <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-            {exs.map((ex, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 18px", borderBottom: i < exs.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                <div style={{ width: 30, height: 30, borderRadius: 7, background: T.primaryLight, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.primary }}>{ex.ordine || i + 1}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{ex.esercizio}</div>
-                  <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{[ex.serie && `${ex.serie} serie`, ex.ripetizioni && `${ex.ripetizioni} reps`, ex.peso_suggerito && `${ex.peso_suggerito}kg`].filter(Boolean).join(" · ")}</div>
+      {/* LISTA PER MUSCOLO */}
+      {Object.entries(grouped).length === 0
+        ? <EmptyState icon={Dumbbell} msg="Nessun esercizio trovato." />
+        : Object.entries(grouped).map(([muscolo, exs]) => (
+          <div key={muscolo} style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: T.primary, letterSpacing: "1px", textTransform: "uppercase" }}>{muscolo}</div>
+              <div style={{ fontSize: 11, color: T.textMut, fontWeight: 600 }}>({exs.length})</div>
+            </div>
+            <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+              {exs.map((ex, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 16px", borderBottom: i < exs.length - 1 ? `1px solid ${T.border}` : "none" }}>
+                  <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: T.text }}>{ex.esercizio}</div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => setEditEx({ ...ex, _original: ex.esercizio })}
+                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1" }}>
+                      <Edit3 size={12} /> Modifica
+                    </button>
+                    <button onClick={() => setConfirmDel(ex)}
+                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
+                      <Trash2 size={12} /> Elimina
+                    </button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", flexShrink: 0 }}>
-                  {ex.scheda_id && <span style={{ fontSize: 11, background: T.bg, color: T.textMut, padding: "3px 8px", borderRadius: 6, fontWeight: 600 }}>{ex.scheda_id}</span>}
-                  {ex.video_url && <a href={ex.video_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, fontWeight: 700, color: T.danger, background: T.dangerLight, padding: "3px 8px", borderRadius: 6, textDecoration: "none" }}>▶ Video</a>}
-                  <button onClick={() => setEditEx({ ...ex })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1" }}><Edit3 size={12} /> Modifica</button>
-                  <button onClick={() => setConfirmDel(ex)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}><Trash2 size={12} /> Elimina</button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      }
     </div>
   );
 }
