@@ -468,6 +468,13 @@ function ClienteFormModal({ cliente, onClose, onSaved, clienti = [] }) {
 
   const handleSave = async () => {
     if (!form.codice || !form.nome || !form.cognome) { alert("Codice, nome e cognome sono obbligatori"); return; }
+    if (!isEdit) {
+      const duplicato = clienti.find(c =>
+        c.nome.trim().toLowerCase() === form.nome.trim().toLowerCase() &&
+        c.cognome.trim().toLowerCase() === form.cognome.trim().toLowerCase()
+      );
+      if (duplicato) { alert(`⚠️ Esiste già un cliente con il nome "${duplicato.nome} ${duplicato.cognome}" (${duplicato.codice}). Controlla prima di procedere.`); return; }
+    }
     setSaving(true);
     try {
       await writeViaScript(isEdit ? "updateCliente" : "addCliente", { cliente: form });
@@ -865,6 +872,75 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
 
 
 /* ─────────────────────────────────────────────
+   ADD ESERCIZIO ROW — bottone + dropdown per seduta
+   ───────────────────────────────────────────── */
+function AddEsercizioRow({ sed, libreria, libByMuscolo, onAdd }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selMuscolo, setSelMuscolo] = useState("");
+  const muscoli = Object.keys(libByMuscolo).sort();
+
+  const filtered = libreria.filter(e => {
+    const matchSearch = !search || `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(search.toLowerCase());
+    const matchMuscolo = !selMuscolo || e.muscolo === selMuscolo;
+    return matchSearch && matchMuscolo;
+  });
+
+  const handlePick = (ex) => {
+    onAdd(ex, sed);
+    setOpen(false);
+    setSearch("");
+    setSelMuscolo("");
+  };
+
+  return (
+    <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44", position: "relative" }}>
+      <button onClick={() => setOpen(v => !v)}
+        style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 8, border: `1px dashed ${T.primary}`, background: T.primaryLight, cursor: "pointer", fontSize: 12, fontWeight: 700, color: T.primary, width: "100%", justifyContent: "center" }}>
+        <Plus size={14} /> Aggiungi esercizio
+      </button>
+      {open && (
+        <div style={{ position: "absolute", left: 12, right: 12, top: "calc(100% - 4px)", zIndex: 200, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", overflow: "hidden" }}>
+          <div style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 8 }}>
+            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cerca esercizio..."
+              style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none" }} />
+            <select value={selMuscolo} onChange={e => setSelMuscolo(e.target.value)}
+              style={{ border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none", background: "#fff", color: T.text }}>
+              <option value="">Tutti i muscoli</option>
+              {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+            <button onClick={() => { setOpen(false); setSearch(""); setSelMuscolo(""); }}
+              style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut, padding: "0 4px" }}><X size={16} /></button>
+          </div>
+          <div style={{ maxHeight: 260, overflow: "auto" }}>
+            {filtered.length === 0 ? (
+              <div style={{ padding: "16px 12px", fontSize: 12, color: T.textMut, textAlign: "center" }}>Nessun esercizio trovato</div>
+            ) : Object.entries(
+                filtered.reduce((acc, e) => { (acc[e.muscolo] = acc[e.muscolo] || []).push(e); return acc; }, {})
+              ).map(([muscolo, items]) => (
+                <div key={muscolo}>
+                  <div style={{ padding: "5px 12px", fontSize: 10, fontWeight: 800, color: T.primary, background: T.bg, letterSpacing: "0.5px", textTransform: "uppercase" }}>{muscolo}</div>
+                  {items.map((ex, i) => (
+                    <button key={i} onClick={() => handlePick(ex)}
+                      style={{ width: "100%", padding: "9px 14px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13, color: T.text, display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                      onMouseEnter={e => e.currentTarget.style.background = T.primaryLight}
+                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
+                      <span style={{ fontWeight: 600 }}>{ex.esercizio}</span>
+                      <Plus size={13} color={T.primary} />
+                    </button>
+                  ))}
+                </div>
+              ))
+            }
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    EDITOR SCHEDA — usato sia per nuova che modifica
    ───────────────────────────────────────────── */
 function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, onSave, onCancel, saving }) {
@@ -1083,26 +1159,8 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                 </div>
               ))}
 
-              {/* Aggiungi esercizio dalla libreria per questa seduta */}
-              <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI A {sed.toUpperCase()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <input value={q} onChange={e => setSearchBySed(p => ({ ...p, [sed]: e.target.value }))}
-                    placeholder="Cerca per nome o muscolo..."
-                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none", background: "#fff" }} />
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                  {libSed.slice(0, 20).map((ex, i) => (
-                    <button key={i} onClick={() => addFromLib(ex, sed)}
-                      style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.text }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-                    >
-                      + {ex.esercizio} <span style={{ fontSize: 9, color: T.textMut }}>({ex.muscolo})</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Aggiungi esercizio — bottone + dropdown */}
+              <AddEsercizioRow sed={sed} libreria={libreria} libByMuscolo={libByMuscolo} onAdd={addFromLib} />
             </div>
           </div>
         );
@@ -1393,6 +1451,12 @@ function ServiceCard({ items, title, emoji, onDelete }) {
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
               {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
               {s.contatto && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
+              {s.tipo === "professionista" && s.instagram && (
+                <a href={`https://instagram.com/${s.instagram.replace("@","")}`} target="_blank" rel="noreferrer"
+                  style={{ fontSize: 12, color: "#E1306C", marginTop: 3, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  📷 {s.instagram.startsWith("@") ? s.instagram : `@${s.instagram}`}
+                </a>
+              )}
             </div>
             <button onClick={() => onDelete(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
               <Trash2 size={12} /> Elimina
@@ -1410,7 +1474,7 @@ function ImpostazioniView({ data, onRefresh }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [delLoading, setDelLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
+  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
 
   const corsi = servizi.filter(s => s.tipo === "corso");
   const professionisti = servizi.filter(s => s.tipo === "professionista");
@@ -1422,7 +1486,7 @@ function ImpostazioniView({ data, onRefresh }) {
       await writeViaScript("addServizio", { servizio: form });
       await onRefresh();
       setShowForm(false);
-      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
+      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
@@ -1478,6 +1542,13 @@ function ImpostazioniView({ data, onRefresh }) {
           <Field label="DESCRIZIONE">
             <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder={form.tipo === "corso" ? "Es: Lezioni ogni martedì e giovedì" : "Es: Fisioterapista specializzato"} />
           </Field>
+          {form.tipo === "professionista" && (
+            <div style={{ marginTop: 12 }}>
+              <Field label="INSTAGRAM">
+                <Input value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="Es: @dott.rossi" />
+              </Field>
+            </div>
+          )}
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
             <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
             <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Salva</BtnPrimary>
