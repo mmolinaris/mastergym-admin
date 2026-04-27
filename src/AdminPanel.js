@@ -12,7 +12,7 @@ import {
    ───────────────────────────────────────────── */
 const SHEET_ID   = "144-i_O8EGeL51ku9oi7n44oS1KGQY2cutIrulSVDJcw";
 const API_KEY    = "AIzaSyDEoQi1P3VVocd7Yokkw8by8PLWq-t1IV4";
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzfmFoDr9RAERgFr-PlmgvCWXiQgwYJj4h9RLIqs00/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFzrYPbupoWLKx3SslQZH7ZIToV_rf23iynPla5x09GvmG7oemtEd_O3qlraBuA9ic/exec";
 const BASE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 const APP_URL    = "https://mastergymcanelli.vercel.app";
 
@@ -876,6 +876,126 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
         <EmptyState icon={Activity} msg="I progressi vengono salvati localmente nell'app del cliente." />
       </SectionBox>
     </div>
+  );
+}
+
+
+/* ─────────────────────────────────────────────
+   TEMPLATE MODAL
+   ───────────────────────────────────────────── */
+function TemplateModal({ cliente, onClose, onSaved }) {
+  const [step, setStep] = useState("pick");
+  const [selTpl, setSelTpl] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const today2 = new Date().toISOString().split("T")[0];
+  const in2m = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
+  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: today2, data_scadenza: in2m, note_trainer: "" });
+  const [exs, setExs] = useState([]);
+
+  const pickTemplate = (t) => {
+    setSelTpl(t);
+    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
+    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
+    setStep("edit");
+  };
+
+  const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
+  const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
+
+  const handleSave = async () => {
+    if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
+    setSaving(true);
+    try {
+      const schedaId = genId("SCH");
+      const clienteSel = cliente;
+      await writeViaScript("creaSchedaDaTemplate", {
+        cliente_codice: cliente.codice,
+        scheda_attiva_old: cliente.scheda_attiva || "",
+        scheda: { scheda_id: schedaId, nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+      });
+      await onSaved();
+      onClose();
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <Overlay zIndex={1200}>
+      <ModalBox maxWidth={820} maxHeight="90vh">
+        <ModalHeader
+          title={step === "pick" ? "Scegli un template" : `Personalizza: ${selTpl?.nome}`}
+          onClose={onClose}
+          left={step === "edit" && (
+            <button onClick={() => setStep("pick")} style={{ background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+              <ArrowLeft size={14} /> Cambia
+            </button>
+          )}
+        />
+        <div style={{ overflow: "auto", flex: 1, padding: "20px 24px" }}>
+          {step === "pick" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {TEMPLATES.map(t => (
+                <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
+                >
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Dumbbell size={22} color={t.colore} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{t.nome}</div>
+                    <div style={{ fontSize: 13, color: T.textSec, marginTop: 3 }}>{t.descrizione}</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "4px 12px", borderRadius: 8 }}>{t.esercizi.length} esercizi</div>
+                  <ChevronRight size={18} color={T.textMut} />
+                </button>
+              ))}
+            </div>
+          )}
+          {step === "edit" && (
+            <div>
+              <div style={{ background: T.bg, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <Field label="NOME SCHEDA *"><Input value={info.nome_scheda} onChange={v => setInfo(p => ({ ...p, nome_scheda: v }))} placeholder="Es: Scheda Mario" /></Field>
+                  <Field label="OBIETTIVO"><Input value={info.obiettivo} onChange={v => setInfo(p => ({ ...p, obiettivo: v }))} placeholder="Es: Tonificazione" /></Field>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  <Field label="DATA INIZIO"><Input type="date" value={info.data_inizio} onChange={v => setInfo(p => ({ ...p, data_inizio: v }))} /></Field>
+                  <Field label="DATA SCADENZA"><Input type="date" value={info.data_scadenza} onChange={v => setInfo(p => ({ ...p, data_scadenza: v }))} /></Field>
+                  <Field label="NOTE"><Input value={info.note_trainer} onChange={v => setInfo(p => ({ ...p, note_trainer: v }))} placeholder="Note..." /></Field>
+                </div>
+              </div>
+              {[...new Set(exs.map(e => e.seduta))].map(sed => (
+                <div key={sed} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: selTpl?.colore || T.primary, marginBottom: 8, textTransform: "uppercase" }}>{sed}</div>
+                  <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    {exs.filter(e => e.seduta === sed).map((ex, ri) => (
+                      <div key={ex._id} style={{ display: "grid", gridTemplateColumns: "2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", alignItems: "center", borderTop: ri > 0 ? `1px solid ${T.border}` : "none" }}>
+                        {["esercizio","serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
+                          <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
+                            style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: fi === 0 ? 700 : 400 }}
+                            onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                            onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                          />
+                        ))}
+                        <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger }}><X size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {step === "edit" && (
+          <ModalFooter>
+            <BtnSecondary onClick={onClose}>Annulla</BtnSecondary>
+            <BtnPrimary onClick={handleSave} loading={saving}><Save size={14} /> Salva e assegna a {cliente.nome}</BtnPrimary>
+          </ModalFooter>
+        )}
+      </ModalBox>
+    </Overlay>
   );
 }
 
