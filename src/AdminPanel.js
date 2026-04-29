@@ -541,41 +541,87 @@ function EserciziTable({ esercizi }) {
    STAMPA SCHEDA
    ───────────────────────────────────────────── */
 function printScheda(scheda, esercizi, cliente) {
-  const sedute = [...new Set(esercizi.map(e => e.seduta || e.giorno))].filter(Boolean);
+  const sedute = [...new Set(esercizi.map(e => e.seduta || e.giorno))].filter(Boolean).sort((a,b) => {
+    const na = parseInt(a.match(/\d+/)?.[0] || 0);
+    const nb = parseInt(b.match(/\d+/)?.[0] || 0);
+    return na - nb;
+  });
   const html = `
     <html><head><title>Scheda ${scheda.nome_scheda}</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
-      h1 { font-size: 22px; margin-bottom: 4px; color: #FF6B00; }
-      .meta { font-size: 13px; color: #666; margin-bottom: 24px; }
-      .cliente { background: #FFF3EB; padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
-      .seduta { margin-bottom: 20px; }
-      .seduta-title { font-size: 14px; font-weight: bold; color: #FF6B00; background: #FFF3EB; padding: 6px 12px; border-radius: 6px; margin-bottom: 8px; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; padding: 24px 32px; color: #111; background: #fff; }
+      .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 3px solid #FF6B00; margin-bottom: 20px; }
+      .header-left { display: flex; align-items: center; gap: 14px; }
+      .logo { width: 52px; height: 52px; border-radius: 10px; background: #FF6B00; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 900; }
+      .palestra-nome { font-size: 18px; font-weight: 900; color: #111; }
+      .palestra-sub { font-size: 11px; color: #888; margin-top: 2px; }
+      .header-right { text-align: right; font-size: 11px; color: #888; line-height: 1.6; }
+      .scheda-box { background: #FFF3EB; border-left: 4px solid #FF6B00; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+      .scheda-nome { font-size: 17px; font-weight: 900; color: #FF6B00; }
+      .scheda-meta { font-size: 12px; color: #666; margin-top: 3px; }
+      .scheda-date { font-size: 12px; color: #444; font-weight: 700; text-align: right; }
+      .cliente-box { background: #f4f4f6; padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+      .seduta { margin-bottom: 20px; page-break-inside: avoid; }
+      .seduta-title { font-size: 13px; font-weight: 800; color: #fff; background: #FF6B00; padding: 7px 14px; border-radius: 6px; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.5px; }
       table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th { background: #f4f4f6; padding: 7px 10px; text-align: left; font-weight: 700; color: #666; border-bottom: 2px solid #e5e5eb; }
-      td { padding: 7px 10px; border-bottom: 1px solid #e5e5eb; }
-      @media print { body { padding: 10px; } }
+      th { background: #f4f4f6; padding: 7px 10px; text-align: left; font-weight: 700; color: #555; border-bottom: 2px solid #e5e5eb; font-size: 11px; text-transform: uppercase; }
+      td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+      tr:last-child td { border-bottom: none; }
+      tr:nth-child(even) td { background: #fafafa; }
+      .num { color: #FF6B00; font-weight: 700; width: 28px; }
+      .ex-name { font-weight: 700; }
+      .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e5e5eb; display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
+      @media print { body { padding: 10px 16px; } .header { margin-bottom: 14px; } }
     </style></head><body>
-    <h1>${scheda.nome_scheda}</h1>
-    <div class="meta">${scheda.obiettivo || ""} · Dal ${fmt(scheda.data_creazione)} al ${fmt(scheda.data_scadenza)}</div>
-    ${cliente ? `<div class="cliente">👤 <b>${cliente.nome} ${cliente.cognome}</b> · Codice: ${cliente.codice}</div>` : ""}
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">MG</div>
+        <div>
+          <div class="palestra-nome">ASD Master Gym</div>
+          <div class="palestra-sub">Via Bussinello, 73 - Canelli (AT) · +39 366 399 1378</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div>@asd_palestra_mastergym</div>
+        <div>mastergymcanelli.vercel.app</div>
+      </div>
+    </div>
+
+    <div class="scheda-box">
+      <div>
+        <div class="scheda-nome">${scheda.nome_scheda}</div>
+        <div class="scheda-meta">${scheda.obiettivo || ""}</div>
+      </div>
+      <div class="scheda-date">
+        Dal ${fmt(scheda.data_creazione)}<br/>al ${fmt(scheda.data_scadenza)}
+      </div>
+    </div>
+
+    ${cliente ? `<div class="cliente-box">👤 <b>${cliente.nome} ${cliente.cognome}</b> &nbsp;·&nbsp; Codice: <b>${cliente.codice}</b> &nbsp;·&nbsp; PIN: <b>${cliente.pin}</b></div>` : ""}
+
     ${sedute.map(s => {
       const exs = esercizi.filter(e => (e.seduta || e.giorno) === s).sort((a, b) => parseInt(a.ordine || 0) - parseInt(b.ordine || 0));
       return `<div class="seduta">
         <div class="seduta-title">${s}</div>
-        <table><thead><tr><th>#</th><th>Esercizio</th><th>Serie</th><th>Reps</th><th>Peso</th><th>Rec.</th><th>Note</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Esercizio</th><th>Serie</th><th>Reps</th><th>Peso</th><th>Rec.</th><th>Muscolo</th><th>Note</th></tr></thead>
         <tbody>${exs.map((ex, i) => `<tr>
-          <td>${ex.ordine || i + 1}</td>
-          <td><b>${ex.esercizio}</b></td>
+          <td class="num">${ex.ordine || i + 1}</td>
+          <td class="ex-name">${ex.esercizio}</td>
           <td>${ex.serie || "—"}</td>
           <td>${ex.ripetizioni || "—"}</td>
           <td>${ex.peso_suggerito ? ex.peso_suggerito + " kg" : "—"}</td>
           <td>${ex.recupero ? ex.recupero + "s" : "—"}</td>
-          <td>${ex.note || ""}</td>
+          <td style="color:#888;font-size:11px">${ex.muscolo || "—"}</td>
+          <td style="color:#666;font-size:11px">${ex.note || ""}</td>
         </tr>`).join("")}</tbody></table>
       </div>`;
     }).join("")}
-    <p style="font-size:11px;color:#999;margin-top:30px;">Stampato da GymBoard Admin</p>
+
+    <div class="footer">
+      <span>Scheda generata da GymBoard · ASD Master Gym</span>
+      <span>Stampato il ${new Date().toLocaleDateString('it-IT')}</span>
+    </div>
     </body></html>`;
   const w = window.open("", "_blank");
   w.document.write(html);
@@ -1021,6 +1067,7 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   );
   const [searchEx, setSearchEx] = useState("");
   const [searchBySed, setSearchBySed] = useState({});
+  const [muscoloSel, setMuscoloSel] = useState({});
 
   const sedute = useMemo(() => {
     const s = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
@@ -1208,26 +1255,34 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
 
               {/* Aggiungi esercizio dalla libreria per questa seduta */}
               <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI ESERCIZIO</div>
-                <select
-                  value=""
-                  onChange={e => {
-                    const val = e.target.value;
-                    if (!val) return;
-                    const found = libreria.find(l => l.esercizio === val);
-                    if (found) addFromLib(found, sed);
-                  }}
-                  style={{ width: "100%", border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
-                >
-                  <option value="">Cerca e seleziona esercizio...</option>
-                  {Object.entries(libByMuscolo).map(([muscolo, items]) => (
-                    <optgroup key={muscolo} label={muscolo}>
-                      {items.map((lib, li) => (
-                        <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 8 }}>+ AGGIUNGI ESERCIZIO</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <select
+                    value={muscoloSel[sed] || ""}
+                    onChange={e => setMuscoloSel(p => ({ ...p, [sed]: e.target.value }))}
+                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="">Tutti i muscoli</option>
+                    {Object.keys(libByMuscolo).sort().map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value=""
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const found = libreria.find(l => l.esercizio === val);
+                      if (found) addFromLib(found, sed);
+                    }}
+                    style={{ flex: 2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="">Seleziona esercizio...</option>
+                    {(muscoloSel[sed] ? (libByMuscolo[muscoloSel[sed]] || []) : libreria).map((lib, li) => (
+                      <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
