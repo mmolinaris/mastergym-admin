@@ -666,7 +666,7 @@ function DashboardView({ data, onNavigate }) {
 function ClientiView({ data, onSelectCliente, onRefresh }) {
   const [search, setSearch]           = useState("");
   const [filtro, setFiltro]           = useState("tutti");
-  const [sortDir, setSortDir]         = useState(1);
+  const [sortDir, setSortDir]         = useState(0);
   const [showForm, setShowForm]       = useState(false);
   const [editCliente, setEditCliente] = useState(null);
   const [confirmDel, setConfirmDel]   = useState(null);
@@ -688,7 +688,7 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
       const mf = filtro === "tutti" ? true : filtro === "nessuna" ? stato === "nessuna" : filtro === "scaduta" ? stato === "scaduta" : stato === "ok";
       return ms && mf;
     });
-    return list.sort((a, b) => String(a.cognome).localeCompare(String(b.cognome)) * sortDir);
+    return list.sort((a, b) => sortDir === 0 ? String(a.codice).localeCompare(String(b.codice), undefined, {numeric: true}) : String(a.cognome).localeCompare(String(b.cognome)) * sortDir);
   }, [clienti, schede, search, filtro, sortDir]);
 
   const scadute = clienti.filter(c => getStato(c) === "scaduta").length;
@@ -736,8 +736,8 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
 
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
         <div style={{ display: "grid", gridTemplateColumns: "2fr 90px 2fr 110px 60px", padding: "8px 16px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
-          <button onClick={() => setSortDir(d => d * -1)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.textSec, padding: 0, textAlign: "left" }}>
-            CLIENTE {sortDir === 1 ? "↑" : "↓"}
+          <button onClick={() => setSortDir(d => d === 0 ? 1 : d === 1 ? -1 : 0)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.textSec, padding: 0, textAlign: "left" }}>
+            CLIENTE {sortDir === 0 ? "#" : sortDir === 1 ? "A→Z" : "Z→A"}
           </button>
           <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>CODICE</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>SCHEDA ATTIVA</span>
