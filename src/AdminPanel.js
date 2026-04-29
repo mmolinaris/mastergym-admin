@@ -1022,7 +1022,14 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const [searchEx, setSearchEx] = useState("");
   const [searchBySed, setSearchBySed] = useState({});
 
-  const sedute = useMemo(() => [...new Set(exs.map(e => e.seduta))].filter(Boolean), [exs]);
+  const sedute = useMemo(() => {
+    const s = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
+    return s.sort((a, b) => {
+      const na = parseInt(a.match(/\d+/)?.[0] || 0);
+      const nb = parseInt(b.match(/\d+/)?.[0] || 0);
+      return na - nb;
+    });
+  }, [exs]);
 
   // Libreria raggruppata per muscolo
   const libByMuscolo = useMemo(() => {
@@ -1043,18 +1050,16 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
   const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
 
-  // Sposta esercizio su/giù - usa swap diretto nell'array
+  // Sposta esercizio su/giù
   const moveEx = (id, dir) => {
     setExs(prev => {
       const sed = prev.find(e => e._id === id)?.seduta;
       const others = prev.filter(e => e.seduta !== sed);
-      const inSed = [...prev.filter(e => e.seduta === sed)];
+      const inSed = [...prev.filter(e => e.seduta === sed)].sort((a,b) => parseInt(a.ordine||0) - parseInt(b.ordine||0));
       const idx = inSed.findIndex(e => e._id === id);
       const newIdx = idx + dir;
       if (newIdx < 0 || newIdx >= inSed.length) return prev;
-      // Swap diretto
       [inSed[idx], inSed[newIdx]] = [inSed[newIdx], inSed[idx]];
-      // Ricalcola ordine
       const reordered = inSed.map((e, i) => ({ ...e, ordine: i + 1 }));
       return [...others, ...reordered];
     });
@@ -1164,47 +1169,29 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                     </div>
                     <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
 
-                    {/* Nome esercizio con dropdown sostituzione */}
+                    {/* Nome esercizio con select dalla libreria */}
                     <div style={{ position: "relative" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <input value={ex.esercizio || ""} onChange={e => updateEx(ex._id, "esercizio", e.target.value)}
-                          style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700 }}
-                          onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
-                          onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-                        />
-                        <button onClick={() => setShowDropdown(showDropdown === ex._id ? null : ex._id)} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 5, cursor: "pointer", padding: "2px 5px", fontSize: 10, color: T.textSec, flexShrink: 0 }} title="Scegli dalla libreria">
-                          📚
-                        </button>
-                      </div>
-                      {showDropdown === ex._id && (
-                        <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 100, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, width: 280, maxHeight: 220, overflow: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
-                          <div style={{ padding: "8px 10px", borderBottom: `1px solid ${T.border}` }}>
-                            <input autoFocus placeholder="Cerca..." onChange={e => setSearchEx(e.target.value)}
-                              style={{ width: "100%", border: `1px solid ${T.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none" }} />
-                          </div>
-                          <div>
-                            {Object.entries(libByMuscolo).map(([muscolo, items]) => {
-                              const filtered = items.filter(i => !searchEx || i.esercizio.toLowerCase().includes(searchEx.toLowerCase()));
-                              if (!filtered.length) return null;
-                              return (
-                                <div key={muscolo}>
-                                  <div style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800, color: T.primary, background: T.bg, letterSpacing: "0.5px" }}>{muscolo.toUpperCase()}</div>
-                                  {filtered.map((lib, li) => (
-                                    <button key={li} onClick={() => { updateEx(ex._id, "esercizio", lib.esercizio); updateEx(ex._id, "muscolo", lib.muscolo); setShowDropdown(null); setSearchEx(""); }}
-                                      style={{ width: "100%", padding: "7px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 12, color: T.text, display: "flex", justifyContent: "space-between" }}
-                                      onMouseEnter={e => e.currentTarget.style.background = T.bg}
-                                      onMouseLeave={e => e.currentTarget.style.background = "none"}
-                                    >
-                                      <span>{lib.esercizio}</span>
-                                      <span style={{ fontSize: 10, color: T.textMut }}>{lib.muscolo}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      <select
+                        value={ex.esercizio || ""}
+                        onChange={e => {
+                          const val = e.target.value;
+                          const found = libreria.find(l => l.esercizio === val);
+                          updateEx(ex._id, "esercizio", val);
+                          if (found) updateEx(ex._id, "muscolo", found.muscolo);
+                        }}
+                        style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700, cursor: "pointer" }}
+                        onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                        onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                      >
+                        <option value={ex.esercizio || ""}>{ex.esercizio || "Seleziona..."}</option>
+                        {Object.entries(libByMuscolo).map(([muscolo, items]) => (
+                          <optgroup key={muscolo} label={muscolo}>
+                            {items.map((lib, li) => (
+                              <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
+                            ))}
+                          </optgroup>
+                        ))}
+                      </select>
                     </div>
 
                     {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
