@@ -404,6 +404,7 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
 function DashboardView({ data, onNavigate, onSelectCliente }) {
   const { clienti, schede } = data;
   const [daGestireOpen, setDaGestireOpen] = useState(false);
+  const [filtroGestire, setFiltroGestire] = useState("tutti");
 
   const getStato = (c) => {
     const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
@@ -463,7 +464,19 @@ function DashboardView({ data, onNavigate, onSelectCliente }) {
             {daGestireOpen ? <ChevronUp size={16} color={T.textMut} /> : <ChevronDown size={16} color={T.textMut} />}
           </button>
           {daGestireOpen && <div style={{ borderTop: `1px solid ${T.border}` }}>
-            {daGestire.map((c, i) => {
+            {/* FILTRI */}
+            <div style={{ padding: "10px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 8, background: T.bg }}>
+              {[
+                { id: "tutti",   label: `Tutti (${daGestire.length})` },
+                { id: "scaduta", label: `⚠ Scaduta (${daGestire.filter(c => getStato(c) === "scaduta").length})`, color: T.danger,  bg: T.dangerLight },
+                { id: "nessuna", label: `Senza scheda (${daGestire.filter(c => getStato(c) === "nessuna").length})`, color: T.warning, bg: T.warningLight },
+              ].map(f => (
+                <button key={f.id} onClick={() => setFiltroGestire(f.id)} style={{ padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, background: filtroGestire === f.id ? (f.bg || T.primaryLight) : "#fff", color: filtroGestire === f.id ? (f.color || T.primary) : T.textSec, boxShadow: filtroGestire === f.id ? `0 0 0 1.5px ${f.color || T.primary}` : `0 0 0 1px ${T.border}` }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {daGestire.filter(c => filtroGestire === "tutti" || getStato(c) === filtroGestire).map((c, i) => {
               const stato = getStato(c);
               const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
               return (
