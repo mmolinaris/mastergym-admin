@@ -403,6 +403,7 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
    ───────────────────────────────────────────── */
 function DashboardView({ data, onNavigate, onSelectCliente }) {
   const { clienti, schede } = data;
+  const [daGestireOpen, setDaGestireOpen] = useState(false);
 
   const getStato = (c) => {
     const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
@@ -452,15 +453,16 @@ function DashboardView({ data, onNavigate, onSelectCliente }) {
         <StatCard icon={AlertCircle} label="Da gestire"          value={stats.daGestire?.length || (stats.scadute + stats.senza)} color={T.danger}  bg={T.dangerLight} />
       </div>
 
-      {/* LISTA DA GESTIRE */}
+      {/* LISTA DA GESTIRE — collassabile */}
       {daGestire.length > 0 && (
         <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, overflow: "hidden", marginBottom: 20 }}>
-          <div style={{ padding: "15px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 10 }}>
+          <button onClick={() => setDaGestireOpen(v => !v)} style={{ width: "100%", padding: "15px 20px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
             <AlertCircle size={17} color={T.danger} />
             <span style={{ fontSize: 15, fontWeight: 800, color: T.text, flex: 1 }}>Da gestire</span>
-            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: T.dangerLight, color: T.danger }}>{daGestire.length} clienti</span>
-          </div>
-          <div>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: T.dangerLight, color: T.danger, marginRight: 8 }}>{daGestire.length} clienti</span>
+            {daGestireOpen ? <ChevronUp size={16} color={T.textMut} /> : <ChevronDown size={16} color={T.textMut} />}
+          </button>
+          {daGestireOpen && <div style={{ borderTop: `1px solid ${T.border}` }}>
             {daGestire.map((c, i) => {
               const stato = getStato(c);
               const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
@@ -486,7 +488,7 @@ function DashboardView({ data, onNavigate, onSelectCliente }) {
                 </div>
               );
             })}
-          </div>
+          </div>}
         </div>
       )}
 
