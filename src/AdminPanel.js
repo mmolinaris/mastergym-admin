@@ -1208,23 +1208,26 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
 
               {/* Aggiungi esercizio dalla libreria per questa seduta */}
               <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI A {sed.toUpperCase()}</div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                  <input value={q} onChange={e => setSearchBySed(p => ({ ...p, [sed]: e.target.value }))}
-                    placeholder="Cerca per nome o muscolo..."
-                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none", background: "#fff" }} />
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                  {libSed.slice(0, 20).map((ex, i) => (
-                    <button key={i} onClick={() => addFromLib(ex, sed)}
-                      style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${T.border}`, background: "#fff", cursor: "pointer", fontSize: 11, fontWeight: 600, color: T.text }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.color = T.primary; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.color = T.text; }}
-                    >
-                      + {ex.esercizio} <span style={{ fontSize: 9, color: T.textMut }}>({ex.muscolo})</span>
-                    </button>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 6 }}>+ AGGIUNGI ESERCIZIO</div>
+                <select
+                  value=""
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    const found = libreria.find(l => l.esercizio === val);
+                    if (found) addFromLib(found, sed);
+                  }}
+                  style={{ width: "100%", border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
+                >
+                  <option value="">Cerca e seleziona esercizio...</option>
+                  {Object.entries(libByMuscolo).map(([muscolo, items]) => (
+                    <optgroup key={muscolo} label={muscolo}>
+                      {items.map((lib, li) => (
+                        <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
+                      ))}
+                    </optgroup>
                   ))}
-                </div>
+                </select>
               </div>
             </div>
           </div>
