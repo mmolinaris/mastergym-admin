@@ -764,7 +764,7 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
                   {c.nome?.[0]}{c.cognome?.[0]}
                 </div>
                 <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{c.nome} {c.cognome}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
                   <div style={{ fontSize: 11, color: T.textMut }}>PIN: {c.pin}</div>
                 </div>
               </div>
