@@ -664,18 +664,35 @@ function DashboardView({ data, onNavigate }) {
    CLIENTI VIEW
    ───────────────────────────────────────────── */
 function ClientiView({ data, onSelectCliente, onRefresh }) {
-  const [search, setSearch]       = useState("");
-  const [showForm, setShowForm]   = useState(false);
+  const [search, setSearch]           = useState("");
+  const [filtro, setFiltro]           = useState("tutti");
+  const [sortDir, setSortDir]         = useState(1);
+  const [showForm, setShowForm]       = useState(false);
   const [editCliente, setEditCliente] = useState(null);
   const [confirmDel, setConfirmDel]   = useState(null);
   const [delLoading, setDelLoading]   = useState(false);
   const { clienti, schede } = data;
 
+  const getStato = (c) => {
+    const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+    if (!scheda) return "nessuna";
+    if (daysUntil(scheda.data_scadenza) <= 0) return "scaduta";
+    return "ok";
+  };
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return clienti;
-    return clienti.filter(c => `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q));
-  }, [clienti, search]);
+    let list = clienti.filter(c => {
+      const ms = !q || `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q);
+      const stato = getStato(c);
+      const mf = filtro === "tutti" ? true : filtro === "nessuna" ? stato === "nessuna" : filtro === "scaduta" ? stato === "scaduta" : stato === "ok";
+      return ms && mf;
+    });
+    return list.sort((a, b) => String(a.cognome).localeCompare(String(b.cognome)) * sortDir);
+  }, [clienti, schede, search, filtro, sortDir]);
+
+  const scadute = clienti.filter(c => getStato(c) === "scaduta").length;
+  const senza   = clienti.filter(c => getStato(c) === "nessuna").length;
 
   const handleDelete = async () => {
     setDelLoading(true);
@@ -684,12 +701,18 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
     finally { setDelLoading(false); }
   };
 
+  const btnFiltro = (id, label, color, bg) => (
+    <button onClick={() => setFiltro(id)} style={{ padding: "5px 14px", borderRadius: 20, border: filtro === id ? "none" : `1px solid ${T.border}`, background: filtro === id ? (color || T.primary) : (bg || "#fff"), color: filtro === id ? "#fff" : T.textSec, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+      {label}
+    </button>
+  );
+
   return (
     <div>
       {confirmDel && <ConfirmModal message="Eliminare questo cliente?" onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
       {(showForm || editCliente) && <ClienteFormModal cliente={editCliente} clienti={clienti} onClose={() => { setShowForm(false); setEditCliente(null); }} onSaved={onRefresh} />}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Clienti</h1>
           <p style={{ fontSize: 13.5, color: T.textSec }}>{clienti.length} clienti registrati</p>
@@ -699,46 +722,63 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.card, border: `1px solid ${T.border}`, borderRadius: 11, padding: "10px 16px", marginBottom: 20 }}>
-        <Search size={17} color={T.textMut} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome, cognome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: T.text, background: "transparent" }} />
-        {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={15} /></button>}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 14px" }}>
+          <Search size={15} color={T.textMut} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome, cognome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
+          {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={13} /></button>}
+        </div>
+        {btnFiltro("tutti", "Tutti")}
+        {btnFiltro("ok", "Con scheda", T.success)}
+        {btnFiltro("nessuna", `Senza scheda (${senza})`, T.warning)}
+        {btnFiltro("scaduta", `⚠ Scadute (${scadute})`, T.danger)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
-        {filtered.map(c => {
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 90px 2fr 110px 60px", padding: "8px 16px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+          <button onClick={() => setSortDir(d => d * -1)} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.textSec, padding: 0, textAlign: "left" }}>
+            CLIENTE {sortDir === 1 ? "↑" : "↓"}
+          </button>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>CODICE</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>SCHEDA ATTIVA</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>SCADENZA</span>
+          <span></span>
+        </div>
+
+        {filtered.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>Nessun cliente trovato</div>
+        )}
+
+        {filtered.map((c, i) => {
           const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+          const stato = getStato(c);
           const days = daysUntil(scheda?.data_scadenza);
-          const expired = days <= 0 && scheda;
-          const expiring = days > 0 && days <= 7;
+          const rowBg = stato === "scaduta" ? "#FEF2F2" : stato === "nessuna" ? "#FFFBEB" : i % 2 === 0 ? "#fff" : T.bg;
           return (
-            <div key={c.codice} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 11, background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
+            <div key={c.codice} style={{ display: "grid", gridTemplateColumns: "2fr 90px 2fr 110px 60px", padding: "11px 16px", alignItems: "center", borderBottom: `1px solid ${T.border}`, background: rowBg, cursor: "pointer" }}
+              onMouseEnter={e => e.currentTarget.style.filter = "brightness(0.97)"}
+              onMouseLeave={e => e.currentTarget.style.filter = "none"}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
                   {c.nome?.[0]}{c.cognome?.[0]}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{c.nome} {c.cognome}</div>
-                  <div style={{ fontSize: 11.5, color: T.textMut, fontWeight: 600 }}>{c.codice} · PIN: {c.pin}</div>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{c.nome} {c.cognome}</div>
+                  <div style={{ fontSize: 11, color: T.textMut }}>PIN: {c.pin}</div>
                 </div>
-                {expiring && <Badge color={T.warning} bg={T.warningLight}>{days}g</Badge>}
-                {expired  && <Badge color={T.danger}  bg={T.dangerLight}>Scaduta</Badge>}
               </div>
-
-              <div style={{ background: T.bg, borderRadius: 9, padding: "9px 12px", marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{scheda?.nome_scheda || "Nessuna scheda"}</div>
-                {scheda && <div style={{ fontSize: 11, color: T.textSec, marginTop: 2 }}>Scade: {fmt(scheda.data_scadenza)}</div>}
-              </div>
-
-              <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={() => onSelectCliente(c)} style={{ flex: 1, padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.primaryLight, cursor: "pointer", fontSize: 12, fontWeight: 700, color: T.primary, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                  <Eye size={13} /> Dettaglio
-                </button>
-                <button onClick={() => setEditCliente(c)} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1", display: "flex", alignItems: "center", gap: 5 }}>
-                  <Edit3 size={13} /> Modifica
-                </button>
-                <button onClick={() => setConfirmDel(c.codice)} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger, display: "flex", alignItems: "center", gap: 5 }}>
-                  <Trash2 size={13} />
+              <span style={{ fontSize: 12, color: T.textSec }}>{c.codice}</span>
+              <span style={{ fontSize: 13, color: stato === "nessuna" ? T.textMut : T.text, fontStyle: stato === "nessuna" ? "italic" : "normal" }}>
+                {scheda?.nome_scheda || "Nessuna scheda"}
+              </span>
+              <span style={{ fontSize: 12, color: stato === "scaduta" ? T.danger : stato === "nessuna" ? T.textMut : T.textSec, fontWeight: stato === "scaduta" ? 700 : 400 }}>
+                {stato === "scaduta" ? "⚠ " : ""}{scheda ? fmt(scheda.data_scadenza) : "—"}
+              </span>
+              <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }}>
+                <button onClick={() => onSelectCliente(c)} style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.primaryLight, cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.primary }}>Apri →</button>
+                <button onClick={e => { e.stopPropagation(); setConfirmDel(c.codice); }} style={{ padding: "5px 8px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", color: T.danger }}>
+                  <Trash2 size={12} />
                 </button>
               </div>
             </div>
