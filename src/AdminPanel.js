@@ -4,7 +4,7 @@ import {
   Phone, Calendar, AlertCircle, Send, X, Plus, Trash2, Edit3,
   RefreshCw, CheckCircle, MessageCircle, ChevronDown, ChevronUp,
   Loader, History, Activity, BookOpen, Zap, Save, LogOut,
-  ClipboardList, Printer, UserPlus, Eye, EyeOff, Lock, Settings
+  ClipboardList, Printer, UserPlus, Eye, EyeOff, Lock, Settings, TrendingUp
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -138,9 +138,11 @@ async function fetchAllData() {
     fetchSheet("esercizi"), fetchSheet("libreria_esercizi"),
   ]);
   let servizi = [];
+  let progressi = [];
   try { servizi = await fetchSheet("servizi"); } catch(e) {}
+  try { progressi = await fetchSheet("progressi"); } catch(e) {}
   const config = Object.fromEntries(configRows.map(r => [r.chiave, r.valore]));
-  return { config, clienti, schede, esercizi, libreria, servizi };
+  return { config, clienti, schede, esercizi, libreria, servizi, progressi };
 }
 
 async function writeViaScript(action, payload) {
@@ -878,6 +880,105 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
 }
 
 /* ─────────────────────────────────────────────
+   PROGRESSI CLIENTE
+   ───────────────────────────────────────────── */
+function ProgressiCliente({ codice, progressi }) {
+  const [selEx, setSelEx] = useState(null);
+
+  const miei = useMemo(() =>
+    progressi.filter(p => p.codice_cliente === codice),
+    [progressi, codice]
+  );
+
+  const esercizi = useMemo(() =>
+    [...new Set(miei.map(p => p.esercizio).filter(Boolean))].sort(),
+    [miei]
+  );
+
+  const dataPerEx = useMemo(() => {
+    if (!selEx) return [];
+    return miei
+      .filter(p => p.esercizio === selEx && p.peso_kg)
+      .sort((a, b) => {
+        const da = a.data.split("/").reverse().join("-");
+        const db = b.data.split("/").reverse().join("-");
+        return da.localeCompare(db);
+      });
+  }, [miei, selEx]);
+
+  const ultimo = useMemo(() => {
+    if (!miei.length) return null;
+    return [...miei].sort((a, b) => {
+      const da = a.data.split("/").reverse().join("-");
+      const db = b.data.split("/").reverse().join("-");
+      return db.localeCompare(da);
+    })[0];
+  }, [miei]);
+
+  if (miei.length === 0) return (
+    <EmptyState icon={Activity} msg="Nessun progresso registrato ancora. Il cliente deve salvare i pesi dall'app." />
+  );
+
+  return (
+    <div>
+      {/* ULTIMO AGGIORNAMENTO */}
+      {ultimo && (
+        <div style={{ background: T.bg, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12.5, color: T.textSec }}>
+          Ultimo aggiornamento: <b style={{ color: T.text }}>{ultimo.data}</b> — {ultimo.esercizio} <b style={{ color: T.primary }}>{ultimo.peso_kg} kg</b>
+        </div>
+      )}
+
+      {/* FILTRO ESERCIZI */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        {esercizi.map(ex => (
+          <button key={ex} onClick={() => setSelEx(selEx === ex ? null : ex)}
+            style={{ padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: selEx === ex ? T.primary : T.bg, color: selEx === ex ? "#fff" : T.textSec }}>
+            {ex}
+          </button>
+        ))}
+      </div>
+
+      {/* GRAFICO ESERCIZIO SELEZIONATO */}
+      {selEx && (
+        <div style={{ background: T.bg, borderRadius: 12, padding: "16px", border: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 12 }}>{selEx}</div>
+          {dataPerEx.length === 0 ? (
+            <p style={{ fontSize: 13, color: T.textSec }}>Nessun dato per questo esercizio.</p>
+          ) : (
+            <>
+              {/* BARRE */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, marginBottom: 10 }}>
+                {dataPerEx.slice(-12).map((d, i) => {
+                  const max = Math.max(...dataPerEx.slice(-12).map(x => parseFloat(x.peso_kg) || 0));
+                  const h = max > 0 ? ((parseFloat(d.peso_kg) || 0) / max) * 100 : 0;
+                  return (
+                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                      <span style={{ fontSize: 9, color: T.text, fontWeight: 700 }}>{d.peso_kg}</span>
+                      <div style={{ width: "100%", height: `${h}%`, minHeight: 4, background: T.primary, borderRadius: "4px 4px 0 0" }} />
+                      <span style={{ fontSize: 8, color: T.textMut }}>{d.data.slice(0, 5)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* DELTA */}
+              {dataPerEx.length >= 2 && (() => {
+                const diff = (parseFloat(dataPerEx.at(-1).peso_kg) || 0) - (parseFloat(dataPerEx[0].peso_kg) || 0);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: diff >= 0 ? T.success : T.danger, fontSize: 13, fontWeight: 700 }}>
+                    <TrendingUp size={15} />
+                    {diff >= 0 ? "+" : ""}{diff.toFixed(1)} kg dal primo log
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    CLIENTE DETAIL — MODIFICATA (rimosso "Nuova scheda")
    ───────────────────────────────────────────── */
 function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
@@ -1035,7 +1136,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
       </SectionBox>
 
       <SectionBox title="Progressi" icon="📈">
-        <EmptyState icon={Activity} msg="I progressi vengono salvati localmente nell'app del cliente." />
+        <ProgressiCliente codice={cliente.codice} progressi={data.progressi || []} />
       </SectionBox>
     </div>
   );
