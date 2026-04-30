@@ -583,6 +583,14 @@ function ClienteFormModal({ cliente, onClose, onSaved, clienti = [] }) {
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const handleSave = async () => {
     if (!form.codice || !form.nome || !form.cognome) { alert("Codice, nome e cognome sono obbligatori"); return; }
+    // Anti-duplicato solo per nuovi clienti
+    if (!isEdit) {
+      const dup = clienti.find(c =>
+        c.nome.trim().toLowerCase() === form.nome.trim().toLowerCase() &&
+        c.cognome.trim().toLowerCase() === form.cognome.trim().toLowerCase()
+      );
+      if (dup) { alert(`Attenzione: esiste già un cliente con nome "${form.nome} ${form.cognome}" (${dup.codice})`); return; }
+    }
     setSaving(true);
     try {
       await writeViaScript(isEdit ? "updateCliente" : "addCliente", { cliente: form });
@@ -1407,12 +1415,11 @@ function SchedeView({ data, onRefresh }) {
     if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
     setSaving(true);
     try {
-      const schedaId = genId("SCH");
       await writeViaScript("creaSchedaDaTemplate", {
         cliente_codice: clienteSel.codice,
         scheda_attiva_old: clienteSel.scheda_attiva || "",
-        scheda: { scheda_id: schedaId, nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
-        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+        scheda: { scheda_id: "", nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: "" })),
       });
       await onRefresh();
       resetFlow();
@@ -1954,4 +1961,4 @@ export default function AdminPanel() {
       </div>
     </div>
   );
-}                       
+}
