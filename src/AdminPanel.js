@@ -1159,8 +1159,11 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const today2 = new Date().toISOString().split("T")[0];
   const in2m   = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
 
+  const nomeAuto = scheda?.nome_scheda
+    || (cliente ? `${scheda?.obiettivo ? scheda.obiettivo + " — " : "Scheda — "}${cliente.cognome} ${cliente.nome}` : "");
+
   const [info, setInfo] = useState({
-    nome_scheda:    scheda?.nome_scheda   || "",
+    nome_scheda:    nomeAuto,
     obiettivo:      scheda?.obiettivo     || "",
     data_inizio:    scheda?.data_creazione || today2,
     data_scadenza:  scheda?.data_scadenza  || in2m,
@@ -1370,20 +1373,35 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
    ───────────────────────────────────────────── */
 function SchedeView({ data, onRefresh }) {
   const { clienti, libreria } = data;
-  const [step, setStep] = useState("cliente"); // cliente | tipo | editor
+  const [step, setStep] = useState("cliente");
   const [clienteSel, setClienteSel] = useState(null);
-  const [tipoScheda, setTipoScheda] = useState(null); // template obj | "zero"
+  const [tipoScheda, setTipoScheda] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showNuovoCliente, setShowNuovoCliente] = useState(false);
   const [searchCliente, setSearchCliente] = useState("");
+  const [filtroCliente, setFiltroCliente] = useState("tutti");
+
+  const getStatoCliente = (c) => {
+    const scheda = data.schede?.find(s => s.scheda_id === c.scheda_attiva);
+    if (!scheda) return "nessuna";
+    if (daysUntil(scheda.data_scadenza) <= 0) return "scaduta";
+    return "ok";
+  };
 
   const clientiFiltrati = useMemo(() => {
     const q = searchCliente.toLowerCase().trim();
-    if (!q) return clienti;
-    return clienti.filter(c => `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q));
-  }, [clienti, searchCliente]);
+    return clienti.filter(c => {
+      const ms = !q || `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q);
+      const stato = getStatoCliente(c);
+      const mf = filtroCliente === "tutti" ? true
+        : filtroCliente === "nessuna" ? stato === "nessuna"
+        : filtroCliente === "scaduta" ? stato === "scaduta"
+        : true;
+      return ms && mf;
+    }).sort((a, b) => String(a.cognome).localeCompare(String(b.cognome)));
+  }, [clienti, searchCliente, filtroCliente, data.schede]);
 
-  const resetFlow = () => { setStep("cliente"); setClienteSel(null); setTipoScheda(null); setSearchCliente(""); };
+  const resetFlow = () => { setStep("cliente"); setClienteSel(null); setTipoScheda(null); setSearchCliente(""); setFiltroCliente("tutti"); };
 
   const handleSave = async (info, exs) => {
     if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
@@ -1510,7 +1528,7 @@ function SchedeView({ data, onRefresh }) {
       </div>
 
       {/* BARRA RICERCA + NUOVO CLIENTE */}
-      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px" }}>
           <Search size={15} color={T.textMut} />
           <input value={searchCliente} onChange={e => setSearchCliente(e.target.value)} placeholder="Cerca cliente per nome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
@@ -1521,13 +1539,30 @@ function SchedeView({ data, onRefresh }) {
         </button>
       </div>
 
+      {/* FILTRI */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        {[
+          { id: "tutti",   label: `Tutti (${clienti.length})` },
+          { id: "ok",      label: `Con scheda (${clienti.filter(c => getStatoCliente(c) === "ok").length})`,      color: T.success, bg: T.successLight },
+          { id: "nessuna", label: `Senza scheda (${clienti.filter(c => getStatoCliente(c) === "nessuna").length})`, color: T.warning, bg: T.warningLight },
+          { id: "scaduta", label: `⚠ Scaduta (${clienti.filter(c => getStatoCliente(c) === "scaduta").length})`,   color: T.danger,  bg: T.dangerLight },
+        ].map(f => (
+          <button key={f.id} onClick={() => setFiltroCliente(f.id)} style={{ padding: "5px 14px", borderRadius: 20, border: filtroCliente === f.id ? "none" : `1px solid ${T.border}`, background: filtroCliente === f.id ? (f.bg || T.primaryLight) : "#fff", color: filtroCliente === f.id ? (f.color || T.primary) : T.textSec, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
       {/* LISTA CLIENTI */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
         {clientiFiltrati.length === 0 && (
           <div style={{ padding: "32px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>Nessun cliente trovato</div>
         )}
         {clientiFiltrati.map((c, i) => {
-          const hasScheda = !!c.scheda_attiva;
+          const stato = getStatoCliente(c);
+          const badgeLabel = stato === "scaduta" ? "⚠ Scaduta" : stato === "nessuna" ? "Senza scheda" : "Ha scheda";
+          const badgeColor = stato === "scaduta" ? T.danger : stato === "nessuna" ? T.warning : T.success;
+          const badgeBg    = stato === "scaduta" ? T.dangerLight : stato === "nessuna" ? T.warningLight : T.successLight;
           return (
             <button key={c.codice} onClick={() => { setClienteSel(c); setStep("tipo"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "13px 18px", borderBottom: i < clientiFiltrati.length - 1 ? `1px solid ${T.border}` : "none", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
               onMouseEnter={e => e.currentTarget.style.background = T.bg}
@@ -1540,8 +1575,8 @@ function SchedeView({ data, onRefresh }) {
                 <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
                 <div style={{ fontSize: 11.5, color: T.textMut, marginTop: 1 }}>{c.codice}</div>
               </div>
-              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, color: hasScheda ? T.success : T.warning, background: hasScheda ? T.successLight : T.warningLight }}>
-                {hasScheda ? "Ha scheda" : "Senza scheda"}
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, color: badgeColor, background: badgeBg }}>
+                {badgeLabel}
               </span>
               <ChevronRight size={16} color={T.textMut} />
             </button>
@@ -1919,4 +1954,4 @@ export default function AdminPanel() {
       </div>
     </div>
   );
-}
+}                       
