@@ -1287,27 +1287,23 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                   </div>
                   <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
                   <div style={{ position: "relative" }}>
-                    <select
+                    <input
                       value={ex.esercizio || ""}
                       onChange={e => {
                         const val = e.target.value;
-                        const found = libreria.find(l => l.esercizio === val);
                         updateEx(ex._id, "esercizio", val);
+                        const found = libreria.find(l => l.esercizio.toLowerCase() === val.toLowerCase());
                         if (found) updateEx(ex._id, "muscolo", found.muscolo);
                       }}
-                      style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700, cursor: "pointer" }}
+                      list={`lib-${ex._id}`}
+                      placeholder="Esercizio..."
+                      style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700 }}
                       onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
                       onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-                    >
-                      <option value={ex.esercizio || ""}>{ex.esercizio || "Seleziona..."}</option>
-                      {Object.entries(libByMuscolo).map(([muscolo, items]) => (
-                        <optgroup key={muscolo} label={muscolo}>
-                          {items.map((lib, li) => (
-                            <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
+                    />
+                    <datalist id={`lib-${ex._id}`}>
+                      {libreria.map((lib, li) => <option key={li} value={lib.esercizio} />)}
+                    </datalist>
                   </div>
                   {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
                     <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
@@ -1367,89 +1363,190 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
 }
 
 /* ─────────────────────────────────────────────
-   SCHEDE VIEW
+   SCHEDE VIEW — nuovo flusso 3 step
+   Step 1: Seleziona cliente (+ crea nuovo)
+   Step 2: Template o Da zero
+   Step 3: Editor
    ───────────────────────────────────────────── */
 function SchedeView({ data, onRefresh }) {
-  const { clienti, esercizi, libreria } = data;
-  const [selTpl, setSelTpl] = useState(null);
+  const { clienti, libreria } = data;
+  const [step, setStep] = useState("cliente"); // cliente | tipo | editor
+  const [clienteSel, setClienteSel] = useState(null);
+  const [tipoScheda, setTipoScheda] = useState(null); // template obj | "zero"
   const [saving, setSaving] = useState(false);
-  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: new Date().toISOString().split("T")[0], data_scadenza: new Date(Date.now() + 60*24*3600000).toISOString().split("T")[0], note_trainer: "", cliente_codice: "" });
-  const [exs, setExs] = useState([]);
+  const [showNuovoCliente, setShowNuovoCliente] = useState(false);
+  const [searchCliente, setSearchCliente] = useState("");
 
-  const pickTemplate = (t) => {
-    setSelTpl(t);
-    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
-    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
-  };
+  const clientiFiltrati = useMemo(() => {
+    const q = searchCliente.toLowerCase().trim();
+    if (!q) return clienti;
+    return clienti.filter(c => `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q));
+  }, [clienti, searchCliente]);
 
-  const handleSave = async (info2, exs2) => {
-    if (!info2.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
-    if (!info2.cliente_codice) { alert("Seleziona un cliente"); return; }
+  const resetFlow = () => { setStep("cliente"); setClienteSel(null); setTipoScheda(null); setSearchCliente(""); };
+
+  const handleSave = async (info, exs) => {
+    if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
     setSaving(true);
     try {
       const schedaId = genId("SCH");
-      const clienteSel = clienti.find(c => c.codice === info2.cliente_codice);
       await writeViaScript("creaSchedaDaTemplate", {
-        cliente_codice: info2.cliente_codice,
-        scheda_attiva_old: clienteSel?.scheda_attiva || "",
-        scheda: { scheda_id: schedaId, nome_scheda: info2.nome_scheda, obiettivo: info2.obiettivo, data_creazione: info2.data_inizio, data_scadenza: info2.data_scadenza, note_trainer: info2.note_trainer },
-        esercizi: exs2.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+        cliente_codice: clienteSel.codice,
+        scheda_attiva_old: clienteSel.scheda_attiva || "",
+        scheda: { scheda_id: schedaId, nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
       });
       await onRefresh();
-      setSelTpl(null);
+      resetFlow();
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
 
-  if (selTpl) return (
-    <div>
-      <button onClick={() => setSelTpl(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 24, padding: 0 }}>
-        <ArrowLeft size={16} /> Torna ai template
-      </button>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 6 }}>
-        Componi scheda — <span style={{ color: selTpl.colore }}>{selTpl.nome}</span>
-      </h1>
-      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 20 }}>Modifica gli esercizi, assegna al cliente e salva.</p>
-      <EditorScheda
-        scheda={{ nome_scheda: selTpl.nome, obiettivo: selTpl.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza }}
-        esercizi={exs}
-        libreria={libreria || []}
-        clienti={clienti}
-        cliente={null}
-        onSave={handleSave}
-        onCancel={() => setSelTpl(null)}
-        saving={saving}
-      />
-    </div>
-  );
+  // ── STEP 3: EDITOR ──
+  if (step === "editor") {
+    const isTemplate = tipoScheda !== "zero";
+    const esIniziali = isTemplate ? tipoScheda.esercizi.map((e, i) => ({ ...e, _id: i })) : [
+      { esercizio: "", muscolo: "", seduta: "Seduta 1", serie: "3", ripetizioni: "", recupero: "60", peso_suggerito: "", note: "", ordine: 1, _id: Date.now() }
+    ];
+    const schedaIniziale = isTemplate
+      ? { nome_scheda: tipoScheda.nome, obiettivo: tipoScheda.obiettivo }
+      : { nome_scheda: "", obiettivo: "" };
+    return (
+      <div>
+        <button onClick={() => setStep("tipo")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
+          <ArrowLeft size={16} /> Cambia tipo
+        </button>
+        {/* BANNER CLIENTE SELEZIONATO */}
+        <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 12, padding: "12px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+            {clienteSel.nome?.[0]}{clienteSel.cognome?.[0]}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: T.text }}>{clienteSel.nome} {clienteSel.cognome}</div>
+            <div style={{ fontSize: 11.5, color: T.textSec }}>{clienteSel.codice} · {isTemplate ? `Template: ${tipoScheda.nome}` : "Scheda da zero"}</div>
+          </div>
+          <button onClick={resetFlow} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut, fontSize: 12 }}>✕ Ricomincia</button>
+        </div>
+        <EditorScheda
+          scheda={schedaIniziale}
+          esercizi={esIniziali}
+          libreria={libreria || []}
+          clienti={clienti}
+          cliente={clienteSel}
+          onSave={handleSave}
+          onCancel={resetFlow}
+          saving={saving}
+        />
+      </div>
+    );
+  }
 
-  return (
+  // ── STEP 2: TIPO SCHEDA ──
+  if (step === "tipo") return (
     <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Schede</h1>
-        <p style={{ fontSize: 13.5, color: T.textSec }}>Scegli un template, personalizzalo e assegnalo a un cliente</p>
+      <button onClick={() => setStep("cliente")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
+        <ArrowLeft size={16} /> Cambia cliente
+      </button>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Tipo di scheda</h1>
+      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 24 }}>Per <b>{clienteSel.nome} {clienteSel.cognome}</b> — come vuoi creare la scheda?</p>
+
+      {/* DA ZERO */}
+      <button onClick={() => { setTipoScheda("zero"); setStep("editor"); }} style={{ width: "100%", background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "22px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, marginBottom: 14, transition: "all 0.15s" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.boxShadow = `0 4px 20px ${T.primary}22`; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
+      >
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: T.primaryLight, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Edit3 size={26} color={T.primary} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>✏️ Da zero</div>
+          <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>Foglio bianco — scrivi tu tutto, esercizio per esercizio</div>
+          <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>Ideale per trainer esperti con scheda già in mente</div>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.primary, background: T.primaryLight, padding: "5px 14px", borderRadius: 8 }}>Scegli →</div>
+      </button>
+
+      {/* DIVISORE */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1, height: 1, background: T.border }} />
+        <span style={{ fontSize: 12, color: T.textMut, fontWeight: 600 }}>oppure parti da un template</span>
+        <div style={{ flex: 1, height: 1, background: T.border }} />
       </div>
-      <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 12, padding: "14px 18px", marginBottom: 24, fontSize: 13, color: T.primary, fontWeight: 600 }}>
-        💡 Seleziona un template per creare una nuova scheda. Le schede assegnate si trovano nel dettaglio di ogni cliente.
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+      {/* TEMPLATE */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {TEMPLATES.map(t => (
-          <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "22px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
+          <button key={t.id} onClick={() => { setTipoScheda(t); setStep("editor"); }} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; e.currentTarget.style.boxShadow = `0 4px 20px ${t.colore}22`; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
           >
-            {/* MODIFICA 4: icona manubrio */}
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Dumbbell size={26} color={t.colore} />
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Dumbbell size={22} color={t.colore} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{t.nome}</div>
-              <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{t.descrizione}</div>
-              <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>{t.esercizi.length} esercizi · {t.sedute.length} sedute</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{t.nome}</div>
+              <div style={{ fontSize: 12, color: T.textSec, marginTop: 3 }}>{t.descrizione}</div>
             </div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "5px 14px", borderRadius: 8 }}>Usa template →</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "4px 12px", borderRadius: 8 }}>Usa →</div>
           </button>
         ))}
+      </div>
+    </div>
+  );
+
+  // ── STEP 1: SELEZIONE CLIENTE ──
+  return (
+    <div>
+      {showNuovoCliente && (
+        <ClienteFormModal
+          clienti={clienti}
+          onClose={() => setShowNuovoCliente(false)}
+          onSaved={async () => { await onRefresh(); setShowNuovoCliente(false); }}
+        />
+      )}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Nuova scheda</h1>
+        <p style={{ fontSize: 13.5, color: T.textSec }}>Prima seleziona il cliente, poi scegli il tipo di scheda</p>
+      </div>
+
+      {/* BARRA RICERCA + NUOVO CLIENTE */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px" }}>
+          <Search size={15} color={T.textMut} />
+          <input value={searchCliente} onChange={e => setSearchCliente(e.target.value)} placeholder="Cerca cliente per nome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
+          {searchCliente && <button onClick={() => setSearchCliente("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={13} /></button>}
+        </div>
+        <button onClick={() => setShowNuovoCliente(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <UserPlus size={15} /> Nuovo cliente
+        </button>
+      </div>
+
+      {/* LISTA CLIENTI */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+        {clientiFiltrati.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>Nessun cliente trovato</div>
+        )}
+        {clientiFiltrati.map((c, i) => {
+          const hasScheda = !!c.scheda_attiva;
+          return (
+            <button key={c.codice} onClick={() => { setClienteSel(c); setStep("tipo"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "13px 18px", borderBottom: i < clientiFiltrati.length - 1 ? `1px solid ${T.border}` : "none", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background = T.bg}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
+                {c.nome?.[0]}{c.cognome?.[0]}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
+                <div style={{ fontSize: 11.5, color: T.textMut, marginTop: 1 }}>{c.codice}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, color: hasScheda ? T.success : T.warning, background: hasScheda ? T.successLight : T.warningLight }}>
+                {hasScheda ? "Ha scheda" : "Senza scheda"}
+              </span>
+              <ChevronRight size={16} color={T.textMut} />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
