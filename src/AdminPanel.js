@@ -138,11 +138,9 @@ async function fetchAllData() {
     fetchSheet("esercizi"), fetchSheet("libreria_esercizi"),
   ]);
   let servizi = [];
-  let progressi = [];
   try { servizi = await fetchSheet("servizi"); } catch(e) {}
-  try { progressi = await fetchSheet("progressi"); } catch(e) {}
   const config = Object.fromEntries(configRows.map(r => [r.chiave, r.valore]));
-  return { config, clienti, schede, esercizi, libreria, servizi, progressi };
+  return { config, clienti, schede, esercizi, libreria, servizi };
 }
 
 async function writeViaScript(action, payload) {
@@ -880,55 +878,66 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
 }
 
 /* ─────────────────────────────────────────────
-   PROGRESSI CLIENTE
+   PROGRESSI CLIENTE — caricamento lazy per cliente
    ───────────────────────────────────────────── */
-function ProgressiCliente({ codice, progressi }) {
-  const [selEx, setSelEx] = useState(null);
+function ProgressiCliente({ codice }) {
+  const [progressi, setProgressi] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [selEx, setSelEx]         = useState(null);
 
-  const miei = useMemo(() =>
-    progressi.filter(p => p.codice_cliente === codice),
-    [progressi, codice]
-  );
+  useEffect(() => {
+    setLoading(true);
+    fetchSheet("progressi")
+      .then(rows => {
+        setProgressi(rows.filter(p => String(p.codice_cliente).trim() === String(codice).trim()));
+      })
+      .catch(() => setProgressi([]))
+      .finally(() => setLoading(false));
+  }, [codice]);
 
   const esercizi = useMemo(() =>
-    [...new Set(miei.map(p => p.esercizio).filter(Boolean))].sort(),
-    [miei]
+    [...new Set(progressi.map(p => p.esercizio).filter(Boolean))].sort(),
+    [progressi]
   );
 
   const dataPerEx = useMemo(() => {
     if (!selEx) return [];
-    return miei
+    return progressi
       .filter(p => p.esercizio === selEx && p.peso_kg)
       .sort((a, b) => {
         const da = a.data.split("/").reverse().join("-");
         const db = b.data.split("/").reverse().join("-");
         return da.localeCompare(db);
       });
-  }, [miei, selEx]);
+  }, [progressi, selEx]);
 
   const ultimo = useMemo(() => {
-    if (!miei.length) return null;
-    return [...miei].sort((a, b) => {
+    if (!progressi.length) return null;
+    return [...progressi].sort((a, b) => {
       const da = a.data.split("/").reverse().join("-");
       const db = b.data.split("/").reverse().join("-");
       return db.localeCompare(da);
     })[0];
-  }, [miei]);
+  }, [progressi]);
 
-  if (miei.length === 0) return (
+  if (loading) return (
+    <div style={{ padding: "16px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>
+      <Loader size={18} style={{ animation: "spin 0.8s linear infinite", marginBottom: 6 }} color={T.primary} />
+      <p>Caricamento progressi...</p>
+    </div>
+  );
+
+  if (progressi.length === 0) return (
     <EmptyState icon={Activity} msg="Nessun progresso registrato ancora. Il cliente deve salvare i pesi dall'app." />
   );
 
   return (
     <div>
-      {/* ULTIMO AGGIORNAMENTO */}
       {ultimo && (
         <div style={{ background: T.bg, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12.5, color: T.textSec }}>
           Ultimo aggiornamento: <b style={{ color: T.text }}>{ultimo.data}</b> — {ultimo.esercizio} <b style={{ color: T.primary }}>{ultimo.peso_kg} kg</b>
         </div>
       )}
-
-      {/* FILTRO ESERCIZI */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
         {esercizi.map(ex => (
           <button key={ex} onClick={() => setSelEx(selEx === ex ? null : ex)}
@@ -937,8 +946,6 @@ function ProgressiCliente({ codice, progressi }) {
           </button>
         ))}
       </div>
-
-      {/* GRAFICO ESERCIZIO SELEZIONATO */}
       {selEx && (
         <div style={{ background: T.bg, borderRadius: 12, padding: "16px", border: `1px solid ${T.border}` }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 12 }}>{selEx}</div>
@@ -946,7 +953,6 @@ function ProgressiCliente({ codice, progressi }) {
             <p style={{ fontSize: 13, color: T.textSec }}>Nessun dato per questo esercizio.</p>
           ) : (
             <>
-              {/* BARRE */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, marginBottom: 10 }}>
                 {dataPerEx.slice(-12).map((d, i) => {
                   const max = Math.max(...dataPerEx.slice(-12).map(x => parseFloat(x.peso_kg) || 0));
@@ -960,7 +966,6 @@ function ProgressiCliente({ codice, progressi }) {
                   );
                 })}
               </div>
-              {/* DELTA */}
               {dataPerEx.length >= 2 && (() => {
                 const diff = (parseFloat(dataPerEx.at(-1).peso_kg) || 0) - (parseFloat(dataPerEx[0].peso_kg) || 0);
                 return (
@@ -1136,7 +1141,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
       </SectionBox>
 
       <SectionBox title="Progressi" icon="📈">
-        <ProgressiCliente codice={cliente.codice} progressi={data.progressi || []} />
+        <ProgressiCliente codice={cliente.codice} />
       </SectionBox>
     </div>
   );
