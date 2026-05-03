@@ -953,19 +953,50 @@ function ProgressiCliente({ codice }) {
             <p style={{ fontSize: 13, color: T.textSec }}>Nessun dato per questo esercizio.</p>
           ) : (
             <>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, marginBottom: 10 }}>
-                {dataPerEx.slice(-12).map((d, i) => {
-                  const max = Math.max(...dataPerEx.slice(-12).map(x => parseFloat(x.peso_kg) || 0));
-                  const h = max > 0 ? ((parseFloat(d.peso_kg) || 0) / max) * 100 : 0;
-                  return (
-                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                      <span style={{ fontSize: 9, color: T.text, fontWeight: 700 }}>{d.peso_kg}</span>
-                      <div style={{ width: "100%", height: `${h}%`, minHeight: 4, background: T.primary, borderRadius: "4px 4px 0 0" }} />
-                      <span style={{ fontSize: 8, color: T.textMut }}>{d.data.slice(0, 5)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              {/* GRAFICO A LINEA */}
+              {(() => {
+                const pts = dataPerEx.slice(-12);
+                const vals = pts.map(d => parseFloat(d.peso_kg) || 0);
+                const minV = Math.min(...vals);
+                const maxV = Math.max(...vals);
+                const range = maxV - minV || 1;
+                const W = 100, H = 80;
+                const pad = 8;
+                const xStep = pts.length > 1 ? (W - pad * 2) / (pts.length - 1) : 0;
+                const yPos = v => H - pad - ((v - minV) / range) * (H - pad * 2);
+                const points = pts.map((d, i) => ({
+                  x: pad + i * xStep,
+                  y: yPos(parseFloat(d.peso_kg) || 0),
+                  val: d.peso_kg,
+                  date: d.data.slice(0, 5),
+                }));
+                const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+                const areaD = `${pathD} L ${points.at(-1).x} ${H - pad} L ${points[0].x} ${H - pad} Z`;
+                return (
+                  <div style={{ marginBottom: 12 }}>
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 160, overflow: "visible" }}>
+                      {/* Area fill */}
+                      <defs>
+                        <linearGradient id="progGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={T.primary} stopOpacity="0.18" />
+                          <stop offset="100%" stopColor={T.primary} stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path d={areaD} fill="url(#progGrad)" />
+                      {/* Linea */}
+                      <path d={pathD} fill="none" stroke={T.primary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {/* Punti + etichette */}
+                      {points.map((p, i) => (
+                        <g key={i}>
+                          <circle cx={p.x} cy={p.y} r="2.5" fill="#fff" stroke={T.primary} strokeWidth="1.5" />
+                          <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="4.5" fontWeight="700" fill={T.text}>{p.val} kg</text>
+                          <text x={p.x} y={H - 1} textAnchor="middle" fontSize="4" fill={T.textMut}>{p.date}</text>
+                        </g>
+                      ))}
+                    </svg>
+                  </div>
+                );
+              })()}
               {dataPerEx.length >= 2 && (() => {
                 const diff = (parseFloat(dataPerEx.at(-1).peso_kg) || 0) - (parseFloat(dataPerEx[0].peso_kg) || 0);
                 return (
