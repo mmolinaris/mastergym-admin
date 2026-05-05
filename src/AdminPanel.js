@@ -1572,7 +1572,7 @@ function SchedeView({ data, onRefresh }) {
     ];
     const schedaIniziale = isTemplate
       ? { nome_scheda: tipoScheda.nome, obiettivo: tipoScheda.obiettivo }
-      : { nome_scheda: "", obiettivo: "" };
+      : { nome_scheda: `Scheda — ${clienteSel.cognome} ${clienteSel.nome}`, obiettivo: "" };
     return (
       <div>
         <button onClick={() => setStep("tipo")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
