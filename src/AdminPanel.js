@@ -198,7 +198,7 @@ function Toast({ message, type = "success", onDone }) {
   const bg = type === "success" ? T.success : T.danger;
   return (
     <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 9999, background: bg, color: "#fff", borderRadius: 12, padding: "14px 22px", fontSize: 14, fontWeight: 700, boxShadow: "0 8px 32px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", gap: 10, animation: "slideUp 0.3s ease" }}>
-      {type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+      {type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
       {message}
     </div>
   );
@@ -1336,7 +1336,20 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const [exs, setExs] = useState(() =>
     (esErca || []).map((e, i) => ({ ...e, seduta: e.seduta || e.giorno || "Seduta 1", _id: i }))
   );
-  const [muscoloSel, setMuscoloSel] = useState({});
+  const [muscoloSel, setMuscoloSel] = useState({}); 
+  const [addInput, setAddInput] = useState({});
+
+  const addEsercizioLibero = (sed, nome) => {
+    if (!nome.trim()) return;
+    const found = libreria.find(l => l.esercizio.toLowerCase() === nome.trim().toLowerCase());
+    const inSed = exs.filter(e => e.seduta === sed);
+    setExs(prev => [...prev, {
+      esercizio: nome.trim(), muscolo: found?.muscolo || "", seduta: sed,
+      serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
+      ordine: inSed.length + 1, _id: Date.now() + Math.random()
+    }]);
+    setAddInput(p => ({ ...p, [sed]: "" }));
+  };
 
   const sedute = useMemo(() => {
     const s = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
@@ -1576,7 +1589,7 @@ function SchedeView({ data, onRefresh }) {
         esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: "" })),
       });
       await onRefresh();
-      resetFlow();
+      resetFlow(); showToast("✅ Scheda salvata con successo!");
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
@@ -2061,6 +2074,7 @@ export default function AdminPanel() {
   const [page,            setPage]            = useState("dashboard");
   const [selectedCliente, setSelectedCliente] = useState(null);
   const [waCliente,       setWaCliente]       = useState(null);
+  const { showToast, ToastEl } = useToast();
 
   const loadData = useCallback(async () => {
     setLoading(true); setError(null);
@@ -2116,7 +2130,7 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {waCliente && <WAModal cliente={waCliente} onClose={() => setWaCliente(null)} />}
+        {ToastEl}{waCliente && <WAModal cliente={waCliente} onClose={() => setWaCliente(null)} />}
 
         {page === "dashboard"     && <DashboardView data={data} onNavigate={navigate} onSelectCliente={openCliente} />}
         {page === "clienti"       && <ClientiView   data={data} onSelectCliente={openCliente} onRefresh={loadData} />}
