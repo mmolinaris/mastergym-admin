@@ -1320,6 +1320,19 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
     (esErca || []).map((e, i) => ({ ...e, seduta: e.seduta || e.giorno || "Seduta 1", _id: i }))
   );
   const [muscoloSel, setMuscoloSel] = useState({});
+  const [addInput, setAddInput] = useState({});
+
+  const addEsercizioASeduta = (sed, nome) => {
+    if (!nome.trim()) return;
+    const found = libreria.find(l => l.esercizio.toLowerCase() === nome.trim().toLowerCase());
+    const inSed = exs.filter(e => e.seduta === sed);
+    setExs(prev => [...prev, {
+      esercizio: nome.trim(), muscolo: found?.muscolo || "", seduta: sed,
+      serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
+      ordine: inSed.length + 1, _id: Date.now() + Math.random()
+    }]);
+    setAddInput(p => ({ ...p, [sed]: "" }));
+  };
 
   const sedute = useMemo(() => {
     const s = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
@@ -1463,35 +1476,29 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                   <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
                 </div>
               ))}
-              <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 8 }}>+ AGGIUNGI ESERCIZIO</div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <select
-                    value={muscoloSel[sed] || ""}
-                    onChange={e => setMuscoloSel(p => ({ ...p, [sed]: e.target.value }))}
-                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
-                  >
-                    <option value="">Tutti i muscoli</option>
-                    {Object.keys(libByMuscolo).sort().map(m => (
-                      <option key={m} value={m}>{m}</option>
-                    ))}
-                  </select>
-                  <select
-                    value=""
-                    onChange={e => {
-                      const val = e.target.value;
-                      if (!val) return;
-                      const found = libreria.find(l => l.esercizio === val);
-                      if (found) addFromLib(found, sed);
-                    }}
-                    style={{ flex: 2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
-                  >
-                    <option value="">Seleziona esercizio...</option>
-                    {(muscoloSel[sed] ? (libByMuscolo[muscoloSel[sed]] || []) : libreria).map((lib, li) => (
-                      <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
-                    ))}
-                  </select>
+              <div style={{ padding: "12px", borderTop: `1px solid ${T.border}`, background: "#FAFAFA" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <input
+                    value={addInput[sed] || ""}
+                    onChange={e => setAddInput(p => ({ ...p, [sed]: e.target.value }))}
+                    onKeyDown={e => { if (e.key === "Enter" && (addInput[sed] || "").trim()) addEsercizioASeduta(sed, addInput[sed]); }}
+                    list={`add-lib-${sed}`}
+                    placeholder="Scrivi o cerca un esercizio..."
+                    style={{ flex: 1, border: `1.5px solid ${T.border}`, borderRadius: 9, padding: "9px 14px", fontSize: 13, color: T.text, outline: "none", background: "#fff" }}
+                    onFocus={e => e.target.style.borderColor = T.primary}
+                    onBlur={e => e.target.style.borderColor = T.border}
+                  />
+                  <datalist id={`add-lib-${sed}`}>
+                    {[...libreria].sort((a,b) => a.esercizio.localeCompare(b.esercizio)).map((lib, li) => <option key={li} value={lib.esercizio} />)}
+                  </datalist>
+                  <button
+                    onClick={() => addEsercizioASeduta(sed, addInput[sed] || "")}
+                    disabled={!(addInput[sed] || "").trim()}
+                    style={{ display: "flex", alignItems: "center", gap: 6, background: (addInput[sed] || "").trim() ? T.primary : T.bg, color: (addInput[sed] || "").trim() ? "#fff" : T.textMut, border: "none", borderRadius: 9, padding: "9px 18px", cursor: (addInput[sed] || "").trim() ? "pointer" : "default", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", transition: "all 0.15s" }}>
+                    <Plus size={15} /> Aggiungi
+                  </button>
                 </div>
+                <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>Scrivi libero o scegli dalla libreria — premi Invio o il pulsante</div>
               </div>
             </div>
           </div>
