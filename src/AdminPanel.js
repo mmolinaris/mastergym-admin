@@ -190,11 +190,28 @@ const T = {
   success: "#10B981", successLight: "#ECFDF5",
   warning: "#F59E0B", warningLight: "#FFFBEB",
   sidebar: "#18181B", sidebarBorder: "#27272A",
-};
+/* ─────────────────────────────────────────────
+   TOAST
+   ───────────────────────────────────────────── */
+function Toast({ message, type = "success", onDone }) {
+  useEffect(() => { const t = setTimeout(onDone, 2800); return () => clearTimeout(t); }, []);
+  const bg = type === "success" ? T.success : T.danger;
+  return (
+    <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 9999, background: bg, color: "#fff", borderRadius: 12, padding: "14px 22px", fontSize: 14, fontWeight: 700, boxShadow: "0 8px 32px rgba(0,0,0,0.2)", display: "flex", alignItems: "center", gap: 10, animation: "slideUp 0.3s ease" }}>
+      {type === "success" ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+      {message}
+    </div>
+  );
+}
+function useToast() {
+  const [toast, setToast] = useState(null);
+  const showToast = (message, type = "success") => setToast({ message, type });
+  const ToastEl = toast ? <Toast message={toast.message} type={toast.type} onDone={() => setToast(null)} /> : null;
+  return { showToast, ToastEl };
+}
 
 /* ─────────────────────────────────────────────
    MODAL HELPERS
-   ───────────────────────────────────────────── */
 function Overlay({ children, zIndex = 1000 }) {
   return (
     <div style={{ position: "fixed", inset: 0, zIndex, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
@@ -1762,6 +1779,8 @@ function EserciziView({ data, onRefresh }) {
   const grouped = useMemo(() => {
     const g = {};
     filtered.forEach(e => { const k = e.muscolo || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
+    // ✅ Ordine alfabetico dentro ogni gruppo
+    Object.keys(g).forEach(k => g[k].sort((a, b) => a.esercizio.localeCompare(b.esercizio)));
     return g;
   }, [filtered]);
 
@@ -1901,23 +1920,33 @@ function ServiceCard({ items, title, emoji, onDelete }) {
         <span style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{title}</span>
         <span style={{ marginLeft: 4, fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: T.bg, color: T.textSec }}>{items.length}</span>
       </div>
-      <div style={{ padding: "12px 20px" }}>
-        {items.length === 0 ? (
-          <p style={{ fontSize: 13, color: T.textMut, margin: 0 }}>Nessun elemento ancora.</p>
-        ) : items.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < items.length - 1 ? `1px solid ${T.border}` : "none" }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
-              {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
-              {s.contatto && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
-            </div>
-            <button onClick={() => onDelete(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
-              <Trash2 size={12} /> Elimina
-            </button>
-          </div>
-        ))}
-      </div>
-    </div>
+      <div style={{ padding: "12px 12px", borderTop: `1px solid ${T.border}`, background: "#FAFAFA" }}>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <div style={{ position: "relative", flex: 1 }}>
+                    <input
+                      value={addInput[sed] || ""}
+                      onChange={e => setAddInput(p => ({ ...p, [sed]: e.target.value }))}
+                      onKeyDown={e => { if (e.key === "Enter" && (addInput[sed] || "").trim()) { addEsercizioLibero(sed, addInput[sed]); } }}
+                      list={`add-lib-${sed}`}
+                      placeholder="🔍 Scrivi o cerca un esercizio..."
+                      style={{ width: "100%", border: `1.5px solid ${T.border}`, borderRadius: 9, padding: "9px 14px", fontSize: 13, color: T.text, outline: "none", background: "#fff" }}
+                      onFocus={e => e.target.style.borderColor = T.primary}
+                      onBlur={e => e.target.style.borderColor = T.border}
+                    />
+                    <datalist id={`add-lib-${sed}`}>
+                      {[...libreria].sort((a,b) => a.esercizio.localeCompare(b.esercizio)).map((lib, li) => <option key={li} value={lib.esercizio} />)}
+                    </datalist>
+                  </div>
+                  <button
+                    onClick={() => addEsercizioLibero(sed, addInput[sed] || "")}
+                    disabled={!(addInput[sed] || "").trim()}
+                    style={{ display: "flex", alignItems: "center", gap: 6, background: (addInput[sed] || "").trim() ? T.primary : T.bg, color: (addInput[sed] || "").trim() ? "#fff" : T.textMut, border: "none", borderRadius: 9, padding: "9px 18px", cursor: (addInput[sed] || "").trim() ? "pointer" : "default", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", transition: "all 0.15s" }}
+                  >
+                    <Plus size={15} /> Aggiungi
+                  </button>
+                </div>
+                <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>Scrivi libero o scegli dalla libreria — premi Invio o il pulsante</div>
+              </div>
   );
 }
 
