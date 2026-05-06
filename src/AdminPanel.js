@@ -1,4 +1,4 @@
-cimport { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Users, LayoutDashboard, Dumbbell, Search, ChevronRight, ArrowLeft,
   Phone, Calendar, AlertCircle, Send, X, Plus, Trash2, Edit3,
@@ -909,6 +909,7 @@ function AddEsercizioRow({ sed, libreria, onAdd }) {
       <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>Scrivi libero o scegli dalla libreria — premi Invio o il pulsante</div>
     </div>
   );
+}
 
 
 /* ─────────────────────────────────────────────
