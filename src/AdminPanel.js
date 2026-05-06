@@ -1744,7 +1744,7 @@ function EserciziView({ data, onRefresh }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [delLoading, setDelLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ esercizio: "", muscolo: "" });
+  const [form, setForm] = useState({ esercizio: "", muscolo: "", video_url: "" });
 
   const muscoli = useMemo(() => {
     return [...new Set(libreria.map(e => e.muscolo).filter(Boolean))].sort();
@@ -1762,7 +1762,6 @@ function EserciziView({ data, onRefresh }) {
   const grouped = useMemo(() => {
     const g = {};
     filtered.forEach(e => { const k = e.muscolo || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
-    Object.keys(g).forEach(k => g[k].sort((a, b) => a.esercizio.localeCompare(b.esercizio, 'it')));
     return g;
   }, [filtered]);
 
@@ -1773,7 +1772,7 @@ function EserciziView({ data, onRefresh }) {
       await writeViaScript("addLibreriaEsercizio", { esercizio: form });
       await onRefresh();
       setShowForm(false);
-      setForm({ esercizio: "", muscolo: "" });
+      setForm({ esercizio: "", muscolo: "", video_url: "" });
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
@@ -1800,6 +1799,7 @@ function EserciziView({ data, onRefresh }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <Field label="NOME *"><Input value={editEx.esercizio || ""} onChange={v => setEditEx(p => ({ ...p, esercizio: v }))} /></Field>
                 <Field label="MUSCOLO"><Input value={editEx.muscolo || ""} onChange={v => setEditEx(p => ({ ...p, muscolo: v }))} /></Field>
+                <Field label="VIDEO URL (YouTube)"><Input value={editEx.video_url || ""} onChange={v => setEditEx(p => ({ ...p, video_url: v }))} placeholder="Es: https://youtube.com/watch?v=..." /></Field>
               </div>
             </div>
             <ModalFooter>
@@ -1846,7 +1846,10 @@ function EserciziView({ data, onRefresh }) {
               </datalist>
             </Field>
           </div>
-          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+          <Field label="VIDEO URL (YouTube)">
+            <Input value={form.video_url} onChange={v => setForm(p => ({ ...p, video_url: v }))} placeholder="Es: https://youtube.com/watch?v=..." />
+          </Field>
+          <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 12 }}>
             <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
             <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Aggiungi alla libreria</BtnPrimary>
           </div>
