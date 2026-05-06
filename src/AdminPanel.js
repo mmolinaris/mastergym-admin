@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+cimport { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Users, LayoutDashboard, Dumbbell, Search, ChevronRight, ArrowLeft,
   Phone, Calendar, AlertCircle, Send, X, Plus, Trash2, Edit3,
@@ -909,71 +909,7 @@ function AddEsercizioRow({ sed, libreria, onAdd }) {
       <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>Scrivi libero o scegli dalla libreria — premi Invio o il pulsante</div>
     </div>
   );
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [selMuscolo, setSelMuscolo] = useState("");
-  const muscoli = Object.keys(libByMuscolo).sort();
 
-  const filtered = libreria.filter(e => {
-    const matchSearch = !search || `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(search.toLowerCase());
-    const matchMuscolo = !selMuscolo || e.muscolo === selMuscolo;
-    return matchSearch && matchMuscolo;
-  });
-
-  const handlePick = (ex) => {
-    onAdd(ex, sed);
-    setOpen(false);
-    setSearch("");
-    setSelMuscolo("");
-  };
-
-  return (
-    <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44", position: "relative" }}>
-      <button onClick={() => setOpen(v => !v)}
-        style={{ display: "flex", alignItems: "center", gap: 7, padding: "7px 14px", borderRadius: 8, border: `1px dashed ${T.primary}`, background: T.primaryLight, cursor: "pointer", fontSize: 12, fontWeight: 700, color: T.primary, width: "100%", justifyContent: "center" }}>
-        <Plus size={14} /> Aggiungi esercizio
-      </button>
-      {open && (
-        <div style={{ position: "absolute", left: 12, right: 12, top: "calc(100% - 4px)", zIndex: 200, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", overflow: "hidden" }}>
-          <div style={{ padding: "10px 12px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 8 }}>
-            <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cerca esercizio..."
-              style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none" }} />
-            <select value={selMuscolo} onChange={e => setSelMuscolo(e.target.value)}
-              style={{ border: `1px solid ${T.border}`, borderRadius: 7, padding: "6px 10px", fontSize: 12, outline: "none", background: "#fff", color: T.text }}>
-              <option value="">Tutti i muscoli</option>
-              {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
-            <button onClick={() => { setOpen(false); setSearch(""); setSelMuscolo(""); }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut, padding: "0 4px" }}><X size={16} /></button>
-          </div>
-          <div style={{ maxHeight: 260, overflow: "auto" }}>
-            {filtered.length === 0 ? (
-              <div style={{ padding: "16px 12px", fontSize: 12, color: T.textMut, textAlign: "center" }}>Nessun esercizio trovato</div>
-            ) : Object.entries(
-                filtered.reduce((acc, e) => { (acc[e.muscolo] = acc[e.muscolo] || []).push(e); return acc; }, {})
-              ).map(([muscolo, items]) => (
-                <div key={muscolo}>
-                  <div style={{ padding: "5px 12px", fontSize: 10, fontWeight: 800, color: T.primary, background: T.bg, letterSpacing: "0.5px", textTransform: "uppercase" }}>{muscolo}</div>
-                  {items.map((ex, i) => (
-                    <button key={i} onClick={() => handlePick(ex)}
-                      style={{ width: "100%", padding: "9px 14px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 13, color: T.text, display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                      onMouseEnter={e => e.currentTarget.style.background = T.primaryLight}
-                      onMouseLeave={e => e.currentTarget.style.background = "none"}>
-                      <span style={{ fontWeight: 600 }}>{ex.esercizio}</span>
-                      <Plus size={13} color={T.primary} />
-                    </button>
-                  ))}
-                </div>
-              ))
-            }
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
 
 /* ─────────────────────────────────────────────
    EDITOR SCHEDA — usato sia per nuova che modifica
