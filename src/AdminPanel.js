@@ -4,7 +4,7 @@ import {
   Phone, Calendar, AlertCircle, Send, X, Plus, Trash2, Edit3,
   RefreshCw, CheckCircle, MessageCircle, ChevronDown, ChevronUp,
   Loader, History, Activity, BookOpen, Zap, Save, LogOut,
-  ClipboardList, Printer, UserPlus, Eye, EyeOff, Lock, Settings
+  ClipboardList, Printer, UserPlus, Eye, EyeOff, Lock, Settings, TrendingUp
 } from "lucide-react";
 
 /* ─────────────────────────────────────────────
@@ -12,7 +12,7 @@ import {
    ───────────────────────────────────────────── */
 const SHEET_ID   = "144-i_O8EGeL51ku9oi7n44oS1KGQY2cutIrulSVDJcw";
 const API_KEY    = "AIzaSyDEoQi1P3VVocd7Yokkw8by8PLWq-t1IV4";
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx5tKZ9pNCI4BqNLasU3XIFcl-RZYiQY799tUj7R_kNFlGmv3ucNPXPamylFGH0qXNS/exec";
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxFzrYPbupoWLKx3SslQZH7ZIToV_rf23iynPla5x09GvmG7oemtEd_O3qlraBuA9ic/exec";
 const BASE_URL   = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`;
 const APP_URL    = "https://mastergymcanelli.vercel.app";
 
@@ -189,7 +189,7 @@ const T = {
   danger: "#EF4444", dangerLight: "#FEF2F2",
   success: "#10B981", successLight: "#ECFDF5",
   warning: "#F59E0B", warningLight: "#FFFBEB",
-  sidebar: "#3D3D3D", sidebarBorder: "#4A4A4A",
+  sidebar: "#18181B", sidebarBorder: "#27272A",
 };
 
 /* ─────────────────────────────────────────────
@@ -293,7 +293,6 @@ function ConfirmModal({ message, onConfirm, onCancel, loading }) {
 function LoginScreen({ onLogin }) {
   const [user, setUser]   = useState("");
   const [pass, setPass]   = useState("");
-  const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
 
   const handleLogin = () => {
@@ -308,13 +307,12 @@ function LoginScreen({ onLogin }) {
     <div style={{ minHeight: "100vh", background: T.sidebar, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div style={{ background: T.card, borderRadius: 20, padding: "40px 36px", width: "100%", maxWidth: 380, boxShadow: "0 24px 64px rgba(0,0,0,0.4)" }}>
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ width: 80, height: 80, borderRadius: 20, overflow: "hidden", margin: "0 auto 16px" }}>
-            <img src="https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png" alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ width: 56, height: 56, borderRadius: 14, background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Dumbbell size={28} color="#fff" strokeWidth={2.5} />
           </div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>ASD Master Gym</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: T.text }}>GymBoard Admin</div>
           <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>Accedi al pannello di gestione</div>
         </div>
-
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Field label="USERNAME">
             <Input value={user} onChange={setUser} placeholder="Username" />
@@ -329,9 +327,7 @@ function LoginScreen({ onLogin }) {
               style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 11px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}
             />
           </Field>
-
           {error && <p style={{ fontSize: 12, color: T.danger, textAlign: "center", margin: 0 }}>{error}</p>}
-
           <button onClick={handleLogin} style={{ background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 4 }}>
             Accedi
           </button>
@@ -356,8 +352,8 @@ function Sidebar({ active, onNavigate, config, onLogout }) {
     <div style={{ width: 232, minHeight: "100vh", background: T.sidebar, display: "flex", flexDirection: "column", flexShrink: 0, borderRight: `1px solid ${T.sidebarBorder}` }}>
       <div style={{ padding: "22px 18px 18px", borderBottom: `1px solid ${T.sidebarBorder}` }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 9, overflow: "hidden", flexShrink: 0 }}>
-            <img src={config?.logo_url || "https://raw.githubusercontent.com/mmolinaris/mastergymboard/main/public/icon-512.png"} alt="Logo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+          <div style={{ width: 38, height: 38, borderRadius: 9, background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <Dumbbell size={20} color="#fff" strokeWidth={2.5} />
           </div>
           <div>
             <div style={{ color: "#fff", fontSize: 14, fontWeight: 800, lineHeight: 1.2 }}>{config?.nome_palestra || "GymBoard"}</div>
@@ -365,7 +361,6 @@ function Sidebar({ active, onNavigate, config, onLogout }) {
           </div>
         </div>
       </div>
-
       <nav style={{ padding: "12px 10px", flex: 1 }}>
         {items.map(({ id, icon: Icon, label }) => {
           const on = active === id;
@@ -376,7 +371,6 @@ function Sidebar({ active, onNavigate, config, onLogout }) {
           );
         })}
       </nav>
-
       <div style={{ padding: "12px 10px", borderTop: `1px solid ${T.sidebarBorder}` }}>
         <button onClick={onLogout} style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", background: "transparent", color: "#71717A", fontSize: 13.5, fontWeight: 500 }}>
           <LogOut size={17} strokeWidth={1.8} /> Esci
@@ -404,21 +398,144 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
   );
 }
 
-function NavCard({ icon: Icon, label, sub, color, bg, onClick }) {
+/* ─────────────────────────────────────────────
+   DASHBOARD VIEW — MODIFICATA
+   ───────────────────────────────────────────── */
+function DashboardView({ data, onNavigate, onSelectCliente }) {
+  const { clienti, schede } = data;
+  const [daGestireOpen, setDaGestireOpen] = useState(false);
+  const [filtroGestire, setFiltroGestire] = useState("tutti");
+
+  const getStato = (c) => {
+    const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+    if (!scheda) return "nessuna";
+    if (daysUntil(scheda.data_scadenza) <= 0) return "scaduta";
+    return "ok";
+  };
+
+  const stats = useMemo(() => {
+    const conScheda   = clienti.filter(c => getStato(c) === "ok").length;
+    const inScadenza  = clienti.filter(c => {
+      const s = schede.find(sc => sc.scheda_id === c.scheda_attiva);
+      const d = daysUntil(s?.data_scadenza);
+      return d <= 14 && d > 0;
+    }).length;
+    const scadute     = clienti.filter(c => getStato(c) === "scaduta").length;
+    const senza       = clienti.filter(c => getStato(c) === "nessuna").length;
+    return { totClienti: clienti.length, conScheda, inScadenza, scadute, senza };
+  }, [clienti, schede]);
+
+  // Clienti da gestire = senza scheda + scheda scaduta
+  const daGestire = useMemo(() => {
+    return clienti.filter(c => {
+      const stato = getStato(c);
+      return stato === "nessuna" || stato === "scaduta";
+    }).sort((a, b) => {
+      // Prima i con scheda scaduta, poi senza
+      const sa = getStato(a);
+      const sb = getStato(b);
+      if (sa === "scaduta" && sb !== "scaduta") return -1;
+      if (sb === "scaduta" && sa !== "scaduta") return 1;
+      return String(a.cognome).localeCompare(String(b.cognome));
+    });
+  }, [clienti, schede]);
+
   return (
-    <button onClick={onClick} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 16, padding: "28px 30px", cursor: "pointer", textAlign: "left", flex: "1 1 220px", transition: "all 0.15s", display: "flex", alignItems: "center", gap: 20 }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.1)"; e.currentTarget.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
-    >
-      <div style={{ width: 56, height: 56, borderRadius: 14, background: bg, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <Icon size={26} color={color} strokeWidth={2} />
+    <div>
+      <div style={{ marginBottom: 26 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Dashboard</h1>
+        <p style={{ fontSize: 13.5, color: T.textSec }}>Panoramica della palestra</p>
       </div>
-      <div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: T.text }}>{label}</div>
-        <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{sub}</div>
+
+      {/* STAT CARDS — solo 3 utili */}
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 28 }}>
+        <StatCard icon={Users}       label="Clienti totali"      value={stats.totClienti}  color={T.primary} bg={T.primaryLight} />
+        <StatCard icon={CheckCircle} label="Con scheda attiva"   value={stats.conScheda}   color={T.success} bg={T.successLight} />
+        <StatCard icon={AlertCircle} label="Da gestire"          value={stats.daGestire?.length || (stats.scadute + stats.senza)} color={T.danger}  bg={T.dangerLight} />
       </div>
-      <ChevronRight size={20} color={T.textMut} style={{ marginLeft: "auto" }} />
-    </button>
+
+      {/* LISTA DA GESTIRE — collassabile */}
+      {daGestire.length > 0 && (
+        <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${T.border}`, overflow: "hidden", marginBottom: 20 }}>
+          <button onClick={() => setDaGestireOpen(v => !v)} style={{ width: "100%", padding: "15px 20px", display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", cursor: "pointer", textAlign: "left" }}>
+            <AlertCircle size={17} color={T.danger} />
+            <span style={{ fontSize: 15, fontWeight: 800, color: T.text, flex: 1 }}>Da gestire</span>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: T.dangerLight, color: T.danger, marginRight: 8 }}>{daGestire.length} clienti</span>
+            {daGestireOpen ? <ChevronUp size={16} color={T.textMut} /> : <ChevronDown size={16} color={T.textMut} />}
+          </button>
+          {daGestireOpen && <div style={{ borderTop: `1px solid ${T.border}` }}>
+            {/* FILTRI */}
+            <div style={{ padding: "10px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", gap: 8, background: T.bg }}>
+              {[
+                { id: "tutti",   label: `Tutti (${daGestire.length})` },
+                { id: "scaduta", label: `⚠ Scaduta (${daGestire.filter(c => getStato(c) === "scaduta").length})`, color: T.danger,  bg: T.dangerLight },
+                { id: "nessuna", label: `Senza scheda (${daGestire.filter(c => getStato(c) === "nessuna").length})`, color: T.warning, bg: T.warningLight },
+              ].map(f => (
+                <button key={f.id} onClick={() => setFiltroGestire(f.id)} style={{ padding: "4px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 11.5, fontWeight: 700, background: filtroGestire === f.id ? (f.bg || T.primaryLight) : "#fff", color: filtroGestire === f.id ? (f.color || T.primary) : T.textSec, boxShadow: filtroGestire === f.id ? `0 0 0 1.5px ${f.color || T.primary}` : `0 0 0 1px ${T.border}` }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            {daGestire.filter(c => filtroGestire === "tutti" || getStato(c) === filtroGestire).map((c, i) => {
+              const stato = getStato(c);
+              const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+              return (
+                <div key={c.codice} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 20px", borderBottom: i < daGestire.length - 1 ? `1px solid ${T.border}` : "none", background: i % 2 === 0 ? "#fff" : T.bg }}>
+                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: stato === "scaduta" ? T.dangerLight : T.warningLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: stato === "scaduta" ? T.danger : T.warning, flexShrink: 0 }}>
+                    {c.nome?.[0]}{c.cognome?.[0]}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
+                    <div style={{ fontSize: 11.5, color: T.textSec, marginTop: 1 }}>{c.codice}</div>
+                  </div>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6,
+                    color: stato === "scaduta" ? T.danger : T.warning,
+                    background: stato === "scaduta" ? T.dangerLight : T.warningLight
+                  }}>
+                    {stato === "scaduta" ? "⚠ Scheda scaduta" : "Senza scheda"}
+                  </span>
+                  <button onClick={() => onSelectCliente(c)} style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.primaryLight, cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.primary, whiteSpace: "nowrap" }}>
+                    Vai al cliente →
+                  </button>
+                </div>
+              );
+            })}
+          </div>}
+        </div>
+      )}
+
+      {daGestire.length === 0 && (
+        <div style={{ background: T.successLight, border: `1px solid #A7F3D0`, borderRadius: 14, padding: "18px 22px", display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
+          <CheckCircle size={22} color={T.success} />
+          <span style={{ fontSize: 14, fontWeight: 700, color: T.success }}>Tutti i clienti hanno una scheda attiva! 🎉</span>
+        </div>
+      )}
+
+      {/* NAVIGAZIONE RAPIDA */}
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
+        <button onClick={() => onNavigate("clienti")} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", cursor: "pointer", textAlign: "left", flex: "1 1 200px", display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Users size={22} color={T.primary} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>Clienti</div>
+            <div style={{ fontSize: 12.5, color: T.textSec, marginTop: 3 }}>{stats.totClienti} clienti registrati</div>
+          </div>
+          <ChevronRight size={18} color={T.textMut} />
+        </button>
+        <button onClick={() => onNavigate("schede")} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", cursor: "pointer", textAlign: "left", flex: "1 1 200px", display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <ClipboardList size={22} color="#6366F1" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>Nuova scheda</div>
+            <div style={{ fontSize: 12.5, color: T.textSec, marginTop: 3 }}>Crea da template</div>
+          </div>
+          <ChevronRight size={18} color={T.textMut} />
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -447,7 +564,7 @@ function WAModal({ cliente, onClose }) {
 }
 
 /* ─────────────────────────────────────────────
-   CLIENTE FORM MODAL (aggiunta/modifica)
+   CLIENTE FORM MODAL
    ───────────────────────────────────────────── */
 function genCodiceCliente(clienti) {
   const nums = clienti.map(c => parseInt((c.codice || "").replace(/\D/g, ""))).filter(n => !isNaN(n));
@@ -463,17 +580,16 @@ function ClienteFormModal({ cliente, onClose, onSaved, clienti = [] }) {
   const isEdit = !!cliente;
   const [form, setForm] = useState(cliente || { codice: genCodiceCliente(clienti), nome: "", cognome: "", pin: genPin(), telefono: "", email: "", data_iscrizione: today(), scheda_attiva: "", schede_passate: "", obiettivo: "" });
   const [saving, setSaving] = useState(false);
-
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
-
   const handleSave = async () => {
     if (!form.codice || !form.nome || !form.cognome) { alert("Codice, nome e cognome sono obbligatori"); return; }
+    // Anti-duplicato solo per nuovi clienti
     if (!isEdit) {
-      const duplicato = clienti.find(c =>
+      const dup = clienti.find(c =>
         c.nome.trim().toLowerCase() === form.nome.trim().toLowerCase() &&
         c.cognome.trim().toLowerCase() === form.cognome.trim().toLowerCase()
       );
-      if (duplicato) { alert(`⚠️ Esiste già un cliente con il nome "${duplicato.nome} ${duplicato.cognome}" (${duplicato.codice}). Controlla prima di procedere.`); return; }
+      if (dup) { alert(`Attenzione: esiste già un cliente con nome "${form.nome} ${form.cognome}" (${dup.codice})`); return; }
     }
     setSaving(true);
     try {
@@ -483,7 +599,6 @@ function ClienteFormModal({ cliente, onClose, onSaved, clienti = [] }) {
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
-
   return (
     <Overlay>
       <ModalBox maxWidth={580}>
@@ -548,41 +663,81 @@ function EserciziTable({ esercizi }) {
    STAMPA SCHEDA
    ───────────────────────────────────────────── */
 function printScheda(scheda, esercizi, cliente) {
-  const sedute = [...new Set(esercizi.map(e => e.seduta || e.giorno))].filter(Boolean);
+  const sedute = [...new Set(esercizi.map(e => e.seduta || e.giorno))].filter(Boolean).sort((a,b) => {
+    const na = parseInt(a.match(/\d+/)?.[0] || 0);
+    const nb = parseInt(b.match(/\d+/)?.[0] || 0);
+    return na - nb;
+  });
   const html = `
     <html><head><title>Scheda ${scheda.nome_scheda}</title>
     <style>
-      body { font-family: Arial, sans-serif; padding: 30px; color: #111; }
-      h1 { font-size: 22px; margin-bottom: 4px; color: #FF6B00; }
-      .meta { font-size: 13px; color: #666; margin-bottom: 24px; }
-      .cliente { background: #FFF3EB; padding: 10px 14px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
-      .seduta { margin-bottom: 20px; }
-      .seduta-title { font-size: 14px; font-weight: bold; color: #FF6B00; background: #FFF3EB; padding: 6px 12px; border-radius: 6px; margin-bottom: 8px; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Arial, sans-serif; padding: 24px 32px; color: #111; background: #fff; }
+      .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 16px; border-bottom: 3px solid #FF6B00; margin-bottom: 20px; }
+      .header-left { display: flex; align-items: center; gap: 14px; }
+      .logo { width: 52px; height: 52px; border-radius: 10px; background: #FF6B00; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 900; }
+      .palestra-nome { font-size: 18px; font-weight: 900; color: #111; }
+      .palestra-sub { font-size: 11px; color: #888; margin-top: 2px; }
+      .header-right { text-align: right; font-size: 11px; color: #888; line-height: 1.6; }
+      .scheda-box { background: #FFF3EB; border-left: 4px solid #FF6B00; padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+      .scheda-nome { font-size: 17px; font-weight: 900; color: #FF6B00; }
+      .scheda-meta { font-size: 12px; color: #666; margin-top: 3px; }
+      .scheda-date { font-size: 12px; color: #444; font-weight: 700; text-align: right; }
+      .cliente-box { background: #f4f4f6; padding: 10px 14px; border-radius: 6px; margin-bottom: 18px; font-size: 13px; display: flex; align-items: center; gap: 10px; }
+      .seduta { margin-bottom: 20px; page-break-inside: avoid; }
+      .seduta-title { font-size: 13px; font-weight: 800; color: #fff; background: #FF6B00; padding: 7px 14px; border-radius: 6px; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.5px; }
       table { width: 100%; border-collapse: collapse; font-size: 12px; }
-      th { background: #f4f4f6; padding: 7px 10px; text-align: left; font-weight: 700; color: #666; border-bottom: 2px solid #e5e5eb; }
-      td { padding: 7px 10px; border-bottom: 1px solid #e5e5eb; }
-      @media print { body { padding: 10px; } }
+      th { background: #f4f4f6; padding: 7px 10px; text-align: left; font-weight: 700; color: #555; border-bottom: 2px solid #e5e5eb; font-size: 11px; text-transform: uppercase; }
+      td { padding: 8px 10px; border-bottom: 1px solid #f0f0f0; }
+      tr:last-child td { border-bottom: none; }
+      tr:nth-child(even) td { background: #fafafa; }
+      .num { color: #FF6B00; font-weight: 700; width: 28px; }
+      .ex-name { font-weight: 700; }
+      .footer { margin-top: 30px; padding-top: 12px; border-top: 1px solid #e5e5eb; display: flex; justify-content: space-between; font-size: 10px; color: #aaa; }
+      @media print { body { padding: 10px 16px; } .header { margin-bottom: 14px; } }
     </style></head><body>
-    <h1>${scheda.nome_scheda}</h1>
-    <div class="meta">${scheda.obiettivo || ""} · Dal ${fmt(scheda.data_creazione)} al ${fmt(scheda.data_scadenza)}</div>
-    ${cliente ? `<div class="cliente">👤 <b>${cliente.nome} ${cliente.cognome}</b> · Codice: ${cliente.codice}</div>` : ""}
+    <div class="header">
+      <div class="header-left">
+        <div class="logo">MG</div>
+        <div>
+          <div class="palestra-nome">ASD Master Gym</div>
+          <div class="palestra-sub">Via Bussinello, 73 - Canelli (AT) · +39 366 399 1378</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div>@asd_palestra_mastergym</div>
+        <div>mastergymcanelli.vercel.app</div>
+      </div>
+    </div>
+    <div class="scheda-box">
+      <div>
+        <div class="scheda-nome">${scheda.nome_scheda}</div>
+        <div class="scheda-meta">${scheda.obiettivo || ""}</div>
+      </div>
+      <div class="scheda-date">Dal ${fmt(scheda.data_creazione)}<br/>al ${fmt(scheda.data_scadenza)}</div>
+    </div>
+    ${cliente ? `<div class="cliente-box">👤 <b>${cliente.nome} ${cliente.cognome}</b> &nbsp;·&nbsp; Codice: <b>${cliente.codice}</b> &nbsp;·&nbsp; PIN: <b>${cliente.pin}</b></div>` : ""}
     ${sedute.map(s => {
       const exs = esercizi.filter(e => (e.seduta || e.giorno) === s).sort((a, b) => parseInt(a.ordine || 0) - parseInt(b.ordine || 0));
       return `<div class="seduta">
         <div class="seduta-title">${s}</div>
-        <table><thead><tr><th>#</th><th>Esercizio</th><th>Serie</th><th>Reps</th><th>Peso</th><th>Rec.</th><th>Note</th></tr></thead>
+        <table><thead><tr><th>#</th><th>Esercizio</th><th>Serie</th><th>Reps</th><th>Peso</th><th>Rec.</th><th>Muscolo</th><th>Note</th></tr></thead>
         <tbody>${exs.map((ex, i) => `<tr>
-          <td>${ex.ordine || i + 1}</td>
-          <td><b>${ex.esercizio}</b></td>
+          <td class="num">${ex.ordine || i + 1}</td>
+          <td class="ex-name">${ex.esercizio}</td>
           <td>${ex.serie || "—"}</td>
           <td>${ex.ripetizioni || "—"}</td>
           <td>${ex.peso_suggerito ? ex.peso_suggerito + " kg" : "—"}</td>
           <td>${ex.recupero ? ex.recupero + "s" : "—"}</td>
-          <td>${ex.note || ""}</td>
+          <td style="color:#888;font-size:11px">${ex.muscolo || "—"}</td>
+          <td style="color:#666;font-size:11px">${ex.note || ""}</td>
         </tr>`).join("")}</tbody></table>
       </div>`;
     }).join("")}
-    <p style="font-size:11px;color:#999;margin-top:30px;">Stampato da GymBoard Admin</p>
+    <div class="footer">
+      <span>Scheda generata da GymBoard · ASD Master Gym</span>
+      <span>Stampato il ${new Date().toLocaleDateString('it-IT')}</span>
+    </div>
     </body></html>`;
   const w = window.open("", "_blank");
   w.document.write(html);
@@ -591,52 +746,42 @@ function printScheda(scheda, esercizi, cliente) {
 }
 
 /* ─────────────────────────────────────────────
-   DASHBOARD VIEW
-   ───────────────────────────────────────────── */
-function DashboardView({ data, onNavigate }) {
-  const { clienti, schede, esercizi } = data;
-  const stats = useMemo(() => {
-    const inScadenza = clienti.filter(c => { const s = schede.find(sc => sc.scheda_id === c.scheda_attiva); const d = daysUntil(s?.data_scadenza); return d <= 7 && d > 0; }).length;
-    return { totClienti: clienti.length, inScadenza, schedeAttive: schede.length, totEsercizi: esercizi.length };
-  }, [clienti, schede, esercizi]);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 26 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Dashboard</h1>
-        <p style={{ fontSize: 13.5, color: T.textSec }}>Panoramica della palestra</p>
-      </div>
-      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 32 }}>
-        <StatCard icon={Users}       label="Clienti attivi"    value={stats.totClienti}  color={T.primary} bg={T.primaryLight} />
-        <StatCard icon={AlertCircle} label="Schede in scadenza" value={stats.inScadenza} color={T.danger}  bg={T.dangerLight} />
-        <StatCard icon={BookOpen}    label="Schede create"     value={stats.schedeAttive} color="#6366F1"   bg="#EEF2FF" />
-        <StatCard icon={Dumbbell}    label="Esercizi totali"   value={stats.totEsercizi}  color={T.success} bg={T.successLight} />
-      </div>
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-        <NavCard icon={Users}        label="Clienti"  color={T.primary} bg={T.primaryLight}  sub={`${stats.totClienti} clienti`}  onClick={() => onNavigate("clienti")} />
-        <NavCard icon={ClipboardList} label="Schede"  color="#6366F1"   bg="#EEF2FF"          sub={`${stats.schedeAttive} schede`} onClick={() => onNavigate("schede")} />
-        <NavCard icon={Dumbbell}     label="Esercizi" color={T.success} bg={T.successLight}   sub={`${stats.totEsercizi} esercizi`} onClick={() => onNavigate("esercizi")} />
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────────────────────────────────
    CLIENTI VIEW
    ───────────────────────────────────────────── */
 function ClientiView({ data, onSelectCliente, onRefresh }) {
-  const [search, setSearch]       = useState("");
-  const [showForm, setShowForm]   = useState(false);
+  const [search, setSearch]           = useState("");
+  const [filtro, setFiltro]           = useState("tutti");
+  const [sortDir, setSortDir]         = useState('codice');
+  const [showForm, setShowForm]       = useState(false);
   const [editCliente, setEditCliente] = useState(null);
   const [confirmDel, setConfirmDel]   = useState(null);
   const [delLoading, setDelLoading]   = useState(false);
   const { clienti, schede } = data;
 
+  const getStato = (c) => {
+    const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+    if (!scheda) return "nessuna";
+    if (daysUntil(scheda.data_scadenza) <= 0) return "scaduta";
+    return "ok";
+  };
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return clienti;
-    return clienti.filter(c => `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q));
-  }, [clienti, search]);
+    let list = clienti.filter(c => {
+      const ms = !q || `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q);
+      const stato = getStato(c);
+      const mf = filtro === "tutti" ? true : filtro === "nessuna" ? stato === "nessuna" : filtro === "scaduta" ? stato === "scaduta" : stato === "ok";
+      return ms && mf;
+    });
+    return list.sort((a, b) => {
+      if (sortDir === 'codice') return String(a.codice).localeCompare(String(b.codice), undefined, {numeric: true});
+      if (sortDir === 'cognome') return String(a.cognome).localeCompare(String(b.cognome));
+      return String(b.cognome).localeCompare(String(a.cognome));
+    });
+  }, [clienti, schede, search, filtro, sortDir]);
+
+  const scadute = clienti.filter(c => getStato(c) === "scaduta").length;
+  const senza   = clienti.filter(c => getStato(c) === "nessuna").length;
 
   const handleDelete = async () => {
     setDelLoading(true);
@@ -645,12 +790,18 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
     finally { setDelLoading(false); }
   };
 
+  const btnFiltro = (id, label, color, bg) => (
+    <button onClick={() => setFiltro(id)} style={{ padding: "5px 14px", borderRadius: 20, border: filtro === id ? "none" : `1px solid ${T.border}`, background: filtro === id ? (color || T.primary) : (bg || "#fff"), color: filtro === id ? "#fff" : T.textSec, cursor: "pointer", fontSize: 12, fontWeight: 600, whiteSpace: "nowrap" }}>
+      {label}
+    </button>
+  );
+
   return (
     <div>
       {confirmDel && <ConfirmModal message="Eliminare questo cliente?" onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
       {(showForm || editCliente) && <ClienteFormModal cliente={editCliente} clienti={clienti} onClose={() => { setShowForm(false); setEditCliente(null); }} onSaved={onRefresh} />}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Clienti</h1>
           <p style={{ fontSize: 13.5, color: T.textSec }}>{clienti.length} clienti registrati</p>
@@ -660,46 +811,62 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
         </button>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.card, border: `1px solid ${T.border}`, borderRadius: 11, padding: "10px 16px", marginBottom: 20 }}>
-        <Search size={17} color={T.textMut} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome, cognome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 14, color: T.text, background: "transparent" }} />
-        {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={15} /></button>}
+      <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 200, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "8px 14px" }}>
+          <Search size={15} color={T.textMut} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome, cognome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
+          {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={13} /></button>}
+        </div>
+        {btnFiltro("tutti", "Tutti")}
+        {btnFiltro("ok", "Con scheda", T.success)}
+        {btnFiltro("nessuna", `Senza scheda (${senza})`, T.warning)}
+        {btnFiltro("scaduta", `⚠ Scadute (${scadute})`, T.danger)}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14 }}>
-        {filtered.map(c => {
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 90px 2fr 110px 60px", padding: "8px 16px", background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+          <button onClick={() => setSortDir(d => d === 'cognome' ? 'cognome-rev' : 'cognome')} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: sortDir.startsWith('cognome') ? T.primary : T.textSec, padding: 0, textAlign: "left" }}>
+            CLIENTE {sortDir === 'cognome' ? '↑' : sortDir === 'cognome-rev' ? '↓' : ''}
+          </button>
+          <button onClick={() => setSortDir('codice')} style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, color: sortDir === 'codice' ? T.primary : T.textSec, padding: 0 }}>
+            CODICE {sortDir === 'codice' ? '↑' : ''}
+          </button>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>SCHEDA ATTIVA</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.textSec }}>SCADENZA</span>
+          <span></span>
+        </div>
+
+        {filtered.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>Nessun cliente trovato</div>
+        )}
+
+        {filtered.map((c, i) => {
           const scheda = schede.find(s => s.scheda_id === c.scheda_attiva);
+          const stato = getStato(c);
           const days = daysUntil(scheda?.data_scadenza);
-          const expired = days <= 0 && scheda;
-          const expiring = days > 0 && days <= 7;
+          const rowBg = stato === "scaduta" ? "#FEF2F2" : stato === "nessuna" ? "#FFFBEB" : i % 2 === 0 ? "#fff" : T.bg;
           return (
-            <div key={c.codice} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "18px 20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 11, background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
+            <div key={c.codice} style={{ display: "grid", gridTemplateColumns: "2fr 90px 2fr 110px 60px", padding: "11px 16px", alignItems: "center", borderBottom: `1px solid ${T.border}`, background: rowBg }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
                   {c.nome?.[0]}{c.cognome?.[0]}
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{c.nome} {c.cognome}</div>
-                  <div style={{ fontSize: 11.5, color: T.textMut, fontWeight: 600 }}>{c.codice} · PIN: {c.pin}</div>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
+                  <div style={{ fontSize: 11, color: T.textMut }}>PIN: {c.pin}</div>
                 </div>
-                {expiring && <Badge color={T.warning} bg={T.warningLight}>{days}g</Badge>}
-                {expired  && <Badge color={T.danger}  bg={T.dangerLight}>Scaduta</Badge>}
               </div>
-
-              <div style={{ background: T.bg, borderRadius: 9, padding: "9px 12px", marginBottom: 12 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: T.text }}>{scheda?.nome_scheda || "Nessuna scheda"}</div>
-                {scheda && <div style={{ fontSize: 11, color: T.textSec, marginTop: 2 }}>Scade: {fmt(scheda.data_scadenza)}</div>}
-              </div>
-
-              <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={() => onSelectCliente(c)} style={{ flex: 1, padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.primaryLight, cursor: "pointer", fontSize: 12, fontWeight: 700, color: T.primary, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-                  <Eye size={13} /> Dettaglio
-                </button>
-                <button onClick={() => setEditCliente(c)} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1", display: "flex", alignItems: "center", gap: 5 }}>
-                  <Edit3 size={13} /> Modifica
-                </button>
-                <button onClick={() => setConfirmDel(c.codice)} style={{ padding: "7px 10px", borderRadius: 8, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger, display: "flex", alignItems: "center", gap: 5 }}>
-                  <Trash2 size={13} />
+              <span style={{ fontSize: 12, color: T.textSec }}>{c.codice}</span>
+              <span style={{ fontSize: 13, color: stato === "nessuna" ? T.textMut : T.text, fontStyle: stato === "nessuna" ? "italic" : "normal" }}>
+                {scheda?.nome_scheda || "Nessuna scheda"}
+              </span>
+              <span style={{ fontSize: 12, color: stato === "scaduta" ? T.danger : stato === "nessuna" ? T.textMut : T.textSec, fontWeight: stato === "scaduta" ? 700 : 400 }}>
+                {stato === "scaduta" ? "⚠ " : ""}{scheda ? fmt(scheda.data_scadenza) : "—"}
+              </span>
+              <div style={{ display: "flex", gap: 5, justifyContent: "flex-end" }}>
+                <button onClick={() => onSelectCliente(c)} style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.primaryLight, cursor: "pointer", fontSize: 11, fontWeight: 700, color: T.primary }}>Apri →</button>
+                <button onClick={e => { e.stopPropagation(); setConfirmDel(c.codice); }} style={{ padding: "5px 8px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", color: T.danger }}>
+                  <Trash2 size={12} />
                 </button>
               </div>
             </div>
@@ -711,7 +878,144 @@ function ClientiView({ data, onSelectCliente, onRefresh }) {
 }
 
 /* ─────────────────────────────────────────────
-   CLIENTE DETAIL
+   PROGRESSI CLIENTE — caricamento lazy per cliente
+   ───────────────────────────────────────────── */
+function ProgressiCliente({ codice }) {
+  const [progressi, setProgressi] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [selEx, setSelEx]         = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    fetchSheet("progressi")
+      .then(rows => {
+        setProgressi(rows.filter(p => String(p.codice_cliente).trim() === String(codice).trim()));
+      })
+      .catch(() => setProgressi([]))
+      .finally(() => setLoading(false));
+  }, [codice]);
+
+  const esercizi = useMemo(() =>
+    [...new Set(progressi.map(p => p.esercizio).filter(Boolean))].sort(),
+    [progressi]
+  );
+
+  const dataPerEx = useMemo(() => {
+    if (!selEx) return [];
+    return progressi
+      .filter(p => p.esercizio === selEx && p.peso_kg)
+      .sort((a, b) => {
+        const da = a.data.split("/").reverse().join("-");
+        const db = b.data.split("/").reverse().join("-");
+        return da.localeCompare(db);
+      });
+  }, [progressi, selEx]);
+
+  const ultimo = useMemo(() => {
+    if (!progressi.length) return null;
+    return [...progressi].sort((a, b) => {
+      const da = a.data.split("/").reverse().join("-");
+      const db = b.data.split("/").reverse().join("-");
+      return db.localeCompare(da);
+    })[0];
+  }, [progressi]);
+
+  if (loading) return (
+    <div style={{ padding: "16px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>
+      <Loader size={18} style={{ animation: "spin 0.8s linear infinite", marginBottom: 6 }} color={T.primary} />
+      <p>Caricamento progressi...</p>
+    </div>
+  );
+
+  if (progressi.length === 0) return (
+    <EmptyState icon={Activity} msg="Nessun progresso registrato ancora. Il cliente deve salvare i pesi dall'app." />
+  );
+
+  return (
+    <div>
+      {ultimo && (
+        <div style={{ background: T.bg, borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: 12.5, color: T.textSec }}>
+          Ultimo aggiornamento: <b style={{ color: T.text }}>{ultimo.data}</b> — {ultimo.esercizio} <b style={{ color: T.primary }}>{ultimo.peso_kg} kg</b>
+        </div>
+      )}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+        {esercizi.map(ex => (
+          <button key={ex} onClick={() => setSelEx(selEx === ex ? null : ex)}
+            style={{ padding: "5px 12px", borderRadius: 20, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600, background: selEx === ex ? T.primary : T.bg, color: selEx === ex ? "#fff" : T.textSec }}>
+            {ex}
+          </button>
+        ))}
+      </div>
+      {selEx && (
+        <div style={{ background: T.bg, borderRadius: 12, padding: "16px", border: `1px solid ${T.border}` }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 12 }}>{selEx}</div>
+          {dataPerEx.length === 0 ? (
+            <p style={{ fontSize: 13, color: T.textSec }}>Nessun dato per questo esercizio.</p>
+          ) : (
+            <>
+              {/* GRAFICO A LINEA */}
+              {(() => {
+                const pts = dataPerEx.slice(-12);
+                const vals = pts.map(d => parseFloat(d.peso_kg) || 0);
+                const minV = Math.min(...vals);
+                const maxV = Math.max(...vals);
+                const range = maxV - minV || 1;
+                const W = 100, H = 80;
+                const pad = 8;
+                const xStep = pts.length > 1 ? (W - pad * 2) / (pts.length - 1) : 0;
+                const yPos = v => H - pad - ((v - minV) / range) * (H - pad * 2);
+                const points = pts.map((d, i) => ({
+                  x: pad + i * xStep,
+                  y: yPos(parseFloat(d.peso_kg) || 0),
+                  val: d.peso_kg,
+                  date: d.data.slice(0, 5),
+                }));
+                const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+                const areaD = `${pathD} L ${points.at(-1).x} ${H - pad} L ${points[0].x} ${H - pad} Z`;
+                return (
+                  <div style={{ marginBottom: 12 }}>
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: 160, overflow: "visible" }}>
+                      {/* Area fill */}
+                      <defs>
+                        <linearGradient id="progGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor={T.primary} stopOpacity="0.18" />
+                          <stop offset="100%" stopColor={T.primary} stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <path d={areaD} fill="url(#progGrad)" />
+                      {/* Linea */}
+                      <path d={pathD} fill="none" stroke={T.primary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      {/* Punti + etichette */}
+                      {points.map((p, i) => (
+                        <g key={i}>
+                          <circle cx={p.x} cy={p.y} r="2.5" fill="#fff" stroke={T.primary} strokeWidth="1.5" />
+                          <text x={p.x} y={p.y - 5} textAnchor="middle" fontSize="4.5" fontWeight="700" fill={T.text}>{p.val} kg</text>
+                          <text x={p.x} y={H - 1} textAnchor="middle" fontSize="4" fill={T.textMut}>{p.date}</text>
+                        </g>
+                      ))}
+                    </svg>
+                  </div>
+                );
+              })()}
+              {dataPerEx.length >= 2 && (() => {
+                const diff = (parseFloat(dataPerEx.at(-1).peso_kg) || 0) - (parseFloat(dataPerEx[0].peso_kg) || 0);
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: diff >= 0 ? T.success : T.danger, fontSize: 13, fontWeight: 700 }}>
+                    <TrendingUp size={15} />
+                    {diff >= 0 ? "+" : ""}{diff.toFixed(1)} kg dal primo log
+                  </div>
+                );
+              })()}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
+   CLIENTE DETAIL — MODIFICATA (rimosso "Nuova scheda")
    ───────────────────────────────────────────── */
 function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
   const { schede, esercizi } = data;
@@ -740,11 +1044,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
     if (!schedaAttiva) return;
     setSavingEdit(true);
     try {
-      // Elimina esercizi vecchi e riscrivi
-      await writeViaScript("deleteSchedaEsercizi", { schedaId: schedaAttiva.scheda_id });
-      await writeViaScript("creaSchedaDaTemplate", {
-        cliente_codice: cliente.codice,
-        scheda_attiva_old: "",
+      await writeViaScript("updateScheda", {
         scheda: {
           scheda_id: schedaAttiva.scheda_id,
           nome_scheda: info.nome_scheda,
@@ -752,12 +1052,15 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
           data_creazione: info.data_inizio,
           data_scadenza: info.data_scadenza,
           note_trainer: info.note_trainer,
-        },
-        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaAttiva.scheda_id })),
+        }
+      });
+      await writeViaScript("deleteSchedaEsercizi", { schedaId: schedaAttiva.scheda_id });
+      await writeViaScript("addEserciziMultipli", {
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaAttiva.scheda_id }))
       });
       await onRefresh();
       setEditMode(false);
-    } catch (err) { alert("Errore: " + err.message); }
+    } catch (err) { alert("Errore salvataggio: " + err.message); }
     finally { setSavingEdit(false); }
   };
 
@@ -788,19 +1091,22 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
         </div>
       </div>
 
+      {/* SCHEDA ATTIVA — senza tasto "Nuova scheda", solo Modifica e Stampa */}
       <SectionBox title="Scheda attiva" icon="🟢"
-        action={schedaAttiva && (
-          <div style={{ display: "flex", gap: 8 }}>
-            {!editMode && (
-              <button onClick={() => setEditMode(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.primaryLight, color: T.primary, border: `1px solid ${T.primaryBorder}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
-                <Edit3 size={14} /> Modifica
+        action={
+          schedaAttiva ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              {!editMode && (
+                <button onClick={() => setEditMode(true)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.primaryLight, color: T.primary, border: `1px solid ${T.primaryBorder}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 700 }}>
+                  <Edit3 size={14} /> Modifica
+                </button>
+              )}
+              <button onClick={() => printScheda(schedaAttiva, exForScheda(schedaAttiva.scheda_id), cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                <Printer size={14} /> Stampa
               </button>
-            )}
-            <button onClick={() => printScheda(schedaAttiva, exForScheda(schedaAttiva.scheda_id), cliente)} style={{ display: "flex", alignItems: "center", gap: 6, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 9, padding: "7px 14px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
-              <Printer size={14} /> Stampa
-            </button>
-          </div>
-        )}
+            </div>
+          ) : null
+        }
       >
         {editMode && schedaAttiva ? (
           <EditorScheda
@@ -820,7 +1126,7 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
                 <div style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{schedaAttiva.nome_scheda}</div>
                 <div style={{ fontSize: 12, color: T.textSec, marginTop: 3 }}>{schedaAttiva.obiettivo} · {fmt(schedaAttiva.data_creazione)} → {fmt(schedaAttiva.data_scadenza)}</div>
               </div>
-              {days <= 7 && <Badge color={days > 0 ? T.warning : T.danger} bg={days > 0 ? T.warningLight : T.dangerLight}>{days > 0 ? `Scade tra ${days} giorni` : "Scaduta"}</Badge>}
+              {days <= 14 && <Badge color={days > 0 ? T.warning : T.danger} bg={days > 0 ? T.warningLight : T.dangerLight}>{days > 0 ? `Scade tra ${days} giorni` : "Scaduta"}</Badge>}
             </div>
             {[...new Set(exForScheda(schedaAttiva.scheda_id).map(e => e.seduta || e.giorno))].filter(Boolean).map(g => {
               const dayEx = exForScheda(schedaAttiva.scheda_id).filter(e => (e.seduta || e.giorno) === g);
@@ -839,7 +1145,9 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
               );
             })}
           </div>
-        ) : <EmptyState icon={BookOpen} msg="Nessuna scheda attiva. Vai nel dettaglio cliente e crea una nuova scheda." />}
+        ) : (
+          <EmptyState icon={BookOpen} msg="Nessuna scheda attiva. Vai in Schede per crearne una nuova da template e assegnarla a questo cliente." />
+        )}
       </SectionBox>
 
       <SectionBox title="Schede passate" icon="🔘" badge={schedePassate.length > 0 ? `${schedePassate.length}` : undefined}>
@@ -864,63 +1172,143 @@ function ClienteDetail({ cliente, data, onBack, onWhatsApp, onRefresh }) {
       </SectionBox>
 
       <SectionBox title="Progressi" icon="📈">
-        <EmptyState icon={Activity} msg="I progressi vengono salvati localmente nell'app del cliente." />
+        <ProgressiCliente codice={cliente.codice} />
       </SectionBox>
     </div>
   );
 }
 
-
 /* ─────────────────────────────────────────────
-   ADD ESERCIZIO ROW — bottone + dropdown per seduta
+   TEMPLATE MODAL
    ───────────────────────────────────────────── */
-function AddEsercizioRow({ sed, libreria, onAdd }) {
-  const [value, setValue] = useState("");
-  const libSorted = [...libreria].sort((a, b) => a.esercizio.localeCompare(b.esercizio));
-  const handleAdd = () => {
-    if (!value.trim()) return;
-    const found = libSorted.find(l => l.esercizio.toLowerCase() === value.trim().toLowerCase());
-    onAdd(found || { esercizio: value.trim(), muscolo: "" }, sed);
-    setValue("");
+function TemplateModal({ cliente, onClose, onSaved }) {
+  const [step, setStep] = useState("pick");
+  const [selTpl, setSelTpl] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const today2 = new Date().toISOString().split("T")[0];
+  const in2m = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
+  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: today2, data_scadenza: in2m, note_trainer: "" });
+  const [exs, setExs] = useState([]);
+
+  const pickTemplate = (t) => {
+    setSelTpl(t);
+    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
+    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
+    setStep("edit");
   };
+
+  const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
+  const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
+
+  const handleSave = async () => {
+    if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
+    setSaving(true);
+    try {
+      const schedaId = genId("SCH");
+      await writeViaScript("creaSchedaDaTemplate", {
+        cliente_codice: cliente.codice,
+        scheda_attiva_old: cliente.scheda_attiva || "",
+        scheda: { scheda_id: schedaId, nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+      });
+      await onSaved();
+      onClose();
+    } catch (err) { alert("Errore: " + err.message); }
+    finally { setSaving(false); }
+  };
+
   return (
-    <div style={{ padding: "12px", borderTop: `1px solid ${T.border}`, background: "#FAFAFA" }}>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <input
-          value={value}
-          onChange={e => setValue(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter") handleAdd(); }}
-          list={`add-lib-${sed}`}
-          placeholder="Scrivi o cerca un esercizio..."
-          style={{ flex: 1, border: `1.5px solid ${T.border}`, borderRadius: 9, padding: "9px 14px", fontSize: 13, color: T.text, outline: "none", background: "#fff" }}
-          onFocus={e => e.target.style.borderColor = T.primary}
-          onBlur={e => e.target.style.borderColor = T.border}
+    <Overlay zIndex={1200}>
+      <ModalBox maxWidth={820} maxHeight="90vh">
+        <ModalHeader
+          title={step === "pick" ? "Scegli un template" : `Personalizza: ${selTpl?.nome}`}
+          onClose={onClose}
+          left={step === "edit" && (
+            <button onClick={() => setStep("pick")} style={{ background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+              <ArrowLeft size={14} /> Cambia
+            </button>
+          )}
         />
-        <datalist id={`add-lib-${sed}`}>
-          {libSorted.map((lib, li) => <option key={li} value={lib.esercizio} />)}
-        </datalist>
-        <button
-          onClick={handleAdd}
-          disabled={!value.trim()}
-          style={{ display: "flex", alignItems: "center", gap: 6, background: value.trim() ? T.primary : T.bg, color: value.trim() ? "#fff" : T.textMut, border: "none", borderRadius: 9, padding: "9px 18px", cursor: value.trim() ? "pointer" : "default", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap", transition: "all 0.15s" }}>
-          <Plus size={15} /> Aggiungi
-        </button>
-      </div>
-      <div style={{ fontSize: 11, color: T.textMut, marginTop: 6 }}>Scrivi libero o scegli dalla libreria — premi Invio o il pulsante</div>
-    </div>
+        <div style={{ overflow: "auto", flex: 1, padding: "20px 24px" }}>
+          {step === "pick" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {TEMPLATES.map(t => (
+                <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; }}
+                >
+                  {/* MODIFICA 4: icona manubrio invece delle frecce */}
+                  <div style={{ width: 48, height: 48, borderRadius: 12, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Dumbbell size={22} color={t.colore} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: T.text }}>{t.nome}</div>
+                    <div style={{ fontSize: 13, color: T.textSec, marginTop: 3 }}>{t.descrizione}</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "4px 12px", borderRadius: 8 }}>{t.esercizi.length} esercizi</div>
+                  <ChevronRight size={18} color={T.textMut} />
+                </button>
+              ))}
+            </div>
+          )}
+          {step === "edit" && (
+            <div>
+              <div style={{ background: T.bg, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+                  <Field label="NOME SCHEDA *"><Input value={info.nome_scheda} onChange={v => setInfo(p => ({ ...p, nome_scheda: v }))} placeholder="Es: Scheda Mario" /></Field>
+                  <Field label="OBIETTIVO"><Input value={info.obiettivo} onChange={v => setInfo(p => ({ ...p, obiettivo: v }))} placeholder="Es: Tonificazione" /></Field>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+                  <Field label="DATA INIZIO"><Input type="date" value={info.data_inizio} onChange={v => setInfo(p => ({ ...p, data_inizio: v }))} /></Field>
+                  <Field label="DATA SCADENZA"><Input type="date" value={info.data_scadenza} onChange={v => setInfo(p => ({ ...p, data_scadenza: v }))} /></Field>
+                  <Field label="NOTE"><Input value={info.note_trainer} onChange={v => setInfo(p => ({ ...p, note_trainer: v }))} placeholder="Note..." /></Field>
+                </div>
+              </div>
+              {[...new Set(exs.map(e => e.seduta))].map(sed => (
+                <div key={sed} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: selTpl?.colore || T.primary, marginBottom: 8, textTransform: "uppercase" }}>{sed}</div>
+                  <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
+                    {exs.filter(e => e.seduta === sed).map((ex, ri) => (
+                      <div key={ex._id} style={{ display: "grid", gridTemplateColumns: "2fr 55px 70px 70px 60px 1fr 28px", gap: 6, padding: "8px 14px", alignItems: "center", borderTop: ri > 0 ? `1px solid ${T.border}` : "none" }}>
+                        {["esercizio","serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
+                          <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
+                            style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: fi === 0 ? 700 : 400 }}
+                            onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                            onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                          />
+                        ))}
+                        <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger }}><X size={14} /></button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {step === "edit" && (
+          <ModalFooter>
+            <BtnSecondary onClick={onClose}>Annulla</BtnSecondary>
+            <BtnPrimary onClick={handleSave} loading={saving}><Save size={14} /> Salva e assegna a {cliente.nome}</BtnPrimary>
+          </ModalFooter>
+        )}
+      </ModalBox>
+    </Overlay>
   );
 }
 
-
 /* ─────────────────────────────────────────────
-   EDITOR SCHEDA — usato sia per nuova che modifica
+   EDITOR SCHEDA
    ───────────────────────────────────────────── */
 function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, onSave, onCancel, saving }) {
   const today2 = new Date().toISOString().split("T")[0];
   const in2m   = new Date(Date.now() + 60 * 24 * 3600000).toISOString().split("T")[0];
 
+  const nomeAuto = scheda?.nome_scheda
+    || (cliente ? `${scheda?.obiettivo ? scheda.obiettivo + " — " : "Scheda — "}${cliente.cognome} ${cliente.nome}` : "");
+
   const [info, setInfo] = useState({
-    nome_scheda:    scheda?.nome_scheda   || "",
+    nome_scheda:    nomeAuto,
     obiettivo:      scheda?.obiettivo     || "",
     data_inizio:    scheda?.data_creazione || today2,
     data_scadenza:  scheda?.data_scadenza  || in2m,
@@ -931,12 +1319,17 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   const [exs, setExs] = useState(() =>
     (esErca || []).map((e, i) => ({ ...e, seduta: e.seduta || e.giorno || "Seduta 1", _id: i }))
   );
-  const [searchEx, setSearchEx] = useState("");
-  const [searchBySed, setSearchBySed] = useState({});
+  const [muscoloSel, setMuscoloSel] = useState({});
 
-  const sedute = useMemo(() => [...new Set(exs.map(e => e.seduta))].filter(Boolean), [exs]);
+  const sedute = useMemo(() => {
+    const s = [...new Set(exs.map(e => e.seduta))].filter(Boolean);
+    return s.sort((a, b) => {
+      const na = parseInt(a.match(/\d+/)?.[0] || 0);
+      const nb = parseInt(b.match(/\d+/)?.[0] || 0);
+      return na - nb;
+    });
+  }, [exs]);
 
-  // Libreria raggruppata per muscolo
   const libByMuscolo = useMemo(() => {
     const g = {};
     libreria.forEach(e => {
@@ -947,53 +1340,32 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
     return g;
   }, [libreria]);
 
-  const getLibFiltered = (q) => {
-    if (!q) return libreria.slice(0, 40);
-    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q.toLowerCase())).slice(0, 40);
-  };
-
   const updateEx = (id, field, value) => setExs(prev => prev.map(e => e._id === id ? { ...e, [field]: value } : e));
   const removeEx = id => setExs(prev => prev.filter(e => e._id !== id));
 
-  // Sposta esercizio su/giù
   const moveEx = (id, dir) => {
     setExs(prev => {
       const sed = prev.find(e => e._id === id)?.seduta;
-      const inSed = prev.filter(e => e.seduta === sed);
+      const others = prev.filter(e => e.seduta !== sed);
+      const inSed = [...prev.filter(e => e.seduta === sed)].sort((a,b) => parseInt(a.ordine||0) - parseInt(b.ordine||0));
       const idx = inSed.findIndex(e => e._id === id);
       const newIdx = idx + dir;
       if (newIdx < 0 || newIdx >= inSed.length) return prev;
-      const other = inSed[newIdx];
-      return prev.map(e => {
-        if (e._id === id) return { ...e, ordine: other.ordine };
-        if (e._id === other._id) return { ...e, ordine: inSed[idx].ordine };
-        return e;
-      });
+      [inSed[idx], inSed[newIdx]] = [inSed[newIdx], inSed[idx]];
+      const reordered = inSed.map((e, i) => ({ ...e, ordine: i + 1 }));
+      return [...others, ...reordered];
     });
   };
 
-  const addFromLib = (ex, sedutaTarget, position) => {
+  const addFromLib = (ex, sedutaTarget) => {
     const target = sedutaTarget || sedute[0] || "Seduta 1";
     const inSed = exs.filter(e => e.seduta === target);
-    const ordine = position !== undefined ? position : inSed.length + 1;
     const newEx = {
       esercizio: ex.esercizio, muscolo: ex.muscolo, seduta: target,
       serie: "3", ripetizioni: "10-12", recupero: "60", peso_suggerito: "", note: "",
-      ordine, _id: Date.now() + Math.random()
+      ordine: inSed.length + 1, _id: Date.now() + Math.random()
     };
-    if (position !== undefined) {
-      // Inserisci alla posizione specificata e riscala gli altri
-      setExs(prev => {
-        const others = prev.filter(e => e.seduta === target);
-        const rest = prev.filter(e => e.seduta !== target);
-        const updated = others.map(e => ({
-          ...e, ordine: parseInt(e.ordine) >= ordine ? parseInt(e.ordine) + 1 : parseInt(e.ordine)
-        }));
-        return [...rest, ...updated, newEx];
-      });
-    } else {
-      setExs(prev => [...prev, newEx]);
-    }
+    setExs(prev => [...prev, newEx]);
   };
 
   const addSeduta = () => {
@@ -1009,22 +1381,16 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
     if (!window.confirm(`Eliminare "${sed}" con tutti i suoi esercizi?`)) return;
     setExs(prev => {
       const remaining = prev.filter(e => e.seduta !== sed);
-      // Rinomina sedute rimanenti in ordine
       const sedRimanenti = [...new Set(remaining.map(e => e.seduta))].filter(Boolean);
       return remaining.map(e => {
         const idx = sedRimanenti.indexOf(e.seduta);
-        const nuovaSeduta = `Seduta ${idx + 1}`;
-        return { ...e, seduta: nuovaSeduta };
+        return { ...e, seduta: `Seduta ${idx + 1}` };
       });
     });
   };
 
-  // Sostituzione esercizio con dropdown libreria
-  const [showDropdown, setShowDropdown] = useState(null);
-
   return (
     <div>
-      {/* INFO SCHEDA */}
       <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "20px 22px", marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: T.textSec, letterSpacing: "0.5px", marginBottom: 14 }}>INFO SCHEDA</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
@@ -1047,11 +1413,8 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
         )}
       </div>
 
-      {/* ESERCIZI PER SEDUTA */}
       {sedute.map(sed => {
         const sedExs = exs.filter(e => e.seduta === sed).sort((a, b) => parseInt(a.ordine || 0) - parseInt(b.ordine || 0));
-        const q = searchBySed[sed] || "";
-        const libSed = getLibFiltered(q);
         return (
           <div key={sed} style={{ marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
@@ -1061,89 +1424,84 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
               </button>
             </div>
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
-              {/* Header colonne */}
               <div style={{ display: "grid", gridTemplateColumns: "24px 24px 2fr 55px 70px 70px 60px 1fr 28px", gap: 4, padding: "8px 12px", background: T.bg, fontSize: 10, fontWeight: 700, color: T.textMut }}>
                 <span></span><span>#</span><span>ESERCIZIO</span><span style={{textAlign:"center"}}>SERIE</span><span style={{textAlign:"center"}}>REPS</span><span style={{textAlign:"center"}}>KG</span><span style={{textAlign:"center"}}>REC.</span><span>NOTE</span><span></span>
               </div>
-
               {sedExs.map((ex, ri) => (
-                <div key={ex._id}>
-                  <div style={{ display: "grid", gridTemplateColumns: "24px 24px 2fr 55px 70px 70px 60px 1fr 28px", gap: 4, padding: "6px 12px", alignItems: "center", borderTop: `1px solid ${T.border}`, background: ri % 2 === 0 ? "#fff" : T.bg + "88" }}>
-                    {/* Frecce su/giù */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                      <button onClick={() => moveEx(ex._id, -1)} disabled={ri === 0} style={{ background: "none", border: "none", cursor: ri === 0 ? "default" : "pointer", color: ri === 0 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▲</button>
-                      <button onClick={() => moveEx(ex._id, 1)} disabled={ri === sedExs.length - 1} style={{ background: "none", border: "none", cursor: ri === sedExs.length - 1 ? "default" : "pointer", color: ri === sedExs.length - 1 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▼</button>
-                    </div>
-                    <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
-
-                    {/* Nome esercizio con dropdown sostituzione */}
-                    <div style={{ position: "relative" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <input value={ex.esercizio || ""} onChange={e => updateEx(ex._id, "esercizio", e.target.value)}
-                          style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700 }}
-                          onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
-                          onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-                        />
-                        <button onClick={() => setShowDropdown(showDropdown === ex._id ? null : ex._id)} style={{ background: "none", border: `1px solid ${T.border}`, borderRadius: 5, cursor: "pointer", padding: "2px 5px", fontSize: 10, color: T.textSec, flexShrink: 0 }} title="Scegli dalla libreria">
-                          📚
-                        </button>
-                      </div>
-                      {showDropdown === ex._id && (
-                        <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 100, background: "#fff", border: `1px solid ${T.border}`, borderRadius: 10, width: 280, maxHeight: 220, overflow: "auto", boxShadow: "0 8px 24px rgba(0,0,0,0.15)" }}>
-                          <div style={{ padding: "8px 10px", borderBottom: `1px solid ${T.border}` }}>
-                            <input autoFocus placeholder="Cerca..." onChange={e => setSearchEx(e.target.value)}
-                              style={{ width: "100%", border: `1px solid ${T.border}`, borderRadius: 6, padding: "5px 8px", fontSize: 12, outline: "none" }} />
-                          </div>
-                          <div>
-                            {Object.entries(libByMuscolo).map(([muscolo, items]) => {
-                              const filtered = items.filter(i => !searchEx || i.esercizio.toLowerCase().includes(searchEx.toLowerCase()));
-                              if (!filtered.length) return null;
-                              return (
-                                <div key={muscolo}>
-                                  <div style={{ padding: "4px 10px", fontSize: 10, fontWeight: 800, color: T.primary, background: T.bg, letterSpacing: "0.5px" }}>{muscolo.toUpperCase()}</div>
-                                  {filtered.map((lib, li) => (
-                                    <button key={li} onClick={() => { updateEx(ex._id, "esercizio", lib.esercizio); updateEx(ex._id, "muscolo", lib.muscolo); setShowDropdown(null); setSearchEx(""); }}
-                                      style={{ width: "100%", padding: "7px 12px", border: "none", background: "none", cursor: "pointer", textAlign: "left", fontSize: 12, color: T.text, display: "flex", justifyContent: "space-between" }}
-                                      onMouseEnter={e => e.currentTarget.style.background = T.bg}
-                                      onMouseLeave={e => e.currentTarget.style.background = "none"}
-                                    >
-                                      <span>{lib.esercizio}</span>
-                                      <span style={{ fontSize: 10, color: T.textMut }}>{lib.muscolo}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
-                      <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
-                        style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", textAlign: fi < 4 ? "center" : "left" }}
-                        onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
-                        onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
-                      />
-                    ))}
-                    <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
+                <div key={ex._id} style={{ display: "grid", gridTemplateColumns: "24px 24px 2fr 55px 70px 70px 60px 1fr 28px", gap: 4, padding: "6px 12px", alignItems: "center", borderTop: `1px solid ${T.border}`, background: ri % 2 === 0 ? "#fff" : T.bg + "88" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <button onClick={() => moveEx(ex._id, -1)} disabled={ri === 0} style={{ background: "none", border: "none", cursor: ri === 0 ? "default" : "pointer", color: ri === 0 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▲</button>
+                    <button onClick={() => moveEx(ex._id, 1)} disabled={ri === sedExs.length - 1} style={{ background: "none", border: "none", cursor: ri === sedExs.length - 1 ? "default" : "pointer", color: ri === sedExs.length - 1 ? T.textMut : T.primary, padding: 0, fontSize: 10, lineHeight: 1 }}>▼</button>
                   </div>
+                  <span style={{ fontSize: 11, color: T.textMut, fontWeight: 700 }}>{ri + 1}</span>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      value={ex.esercizio || ""}
+                      onChange={e => {
+                        const val = e.target.value;
+                        updateEx(ex._id, "esercizio", val);
+                        const found = libreria.find(l => l.esercizio.toLowerCase() === val.toLowerCase());
+                        if (found) updateEx(ex._id, "muscolo", found.muscolo);
+                      }}
+                      list={`lib-${ex._id}`}
+                      placeholder="Esercizio..."
+                      style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", fontWeight: 700 }}
+                      onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                      onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                    />
+                    <datalist id={`lib-${ex._id}`}>
+                      {libreria.map((lib, li) => <option key={li} value={lib.esercizio} />)}
+                    </datalist>
+                  </div>
+                  {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
+                    <input key={f} value={ex[f] || ""} onChange={e => updateEx(ex._id, f, e.target.value)}
+                      style={{ border: "1px solid transparent", borderRadius: 5, padding: "4px 6px", fontSize: 12, color: T.text, outline: "none", background: "transparent", width: "100%", textAlign: fi < 4 ? "center" : "left" }}
+                      onFocus={e => { e.target.style.borderColor = T.primary; e.target.style.background = "#fff"; }}
+                      onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
+                    />
+                  ))}
+                  <button onClick={() => removeEx(ex._id)} style={{ background: "none", border: "none", cursor: "pointer", color: T.danger, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={14} /></button>
                 </div>
               ))}
-
-              {/* Aggiungi esercizio — bottone + dropdown */}
-              <AddEsercizioRow sed={sed} libreria={libreria} onAdd={addFromLib} />
+              <div style={{ padding: "10px 12px", borderTop: `1px solid ${T.border}`, background: T.bg + "44" }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.textSec, marginBottom: 8 }}>+ AGGIUNGI ESERCIZIO</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <select
+                    value={muscoloSel[sed] || ""}
+                    onChange={e => setMuscoloSel(p => ({ ...p, [sed]: e.target.value }))}
+                    style={{ flex: 1, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="">Tutti i muscoli</option>
+                    {Object.keys(libByMuscolo).sort().map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                  <select
+                    value=""
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const found = libreria.find(l => l.esercizio === val);
+                      if (found) addFromLib(found, sed);
+                    }}
+                    style={{ flex: 2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
+                  >
+                    <option value="">Seleziona esercizio...</option>
+                    {(muscoloSel[sed] ? (libByMuscolo[muscoloSel[sed]] || []) : libreria).map((lib, li) => (
+                      <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
         );
       })}
 
-      {/* AGGIUNGI SEDUTA */}
       <button onClick={addSeduta} style={{ display: "flex", alignItems: "center", gap: 7, background: T.bg, color: T.textSec, border: `1px solid ${T.border}`, borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13, fontWeight: 600, marginBottom: 20, width: "100%", justifyContent: "center" }}>
         <Plus size={15} /> Aggiungi nuova seduta
       </button>
 
-      {/* FOOTER */}
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
         <BtnSecondary onClick={onCancel}>Annulla</BtnSecondary>
         <BtnPrimary onClick={() => onSave(info, exs)} loading={saving}><Save size={14} /> Salva scheda</BtnPrimary>
@@ -1152,150 +1510,269 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
   );
 }
 
-
 /* ─────────────────────────────────────────────
-   SCHEDE VIEW
+   SCHEDE VIEW — nuovo flusso 3 step
+   Step 1: Seleziona cliente (+ crea nuovo)
+   Step 2: Template o Da zero
+   Step 3: Editor
    ───────────────────────────────────────────── */
 function SchedeView({ data, onRefresh }) {
-  const { clienti, esercizi, libreria } = data;
-  const [selTpl,   setSelTpl]   = useState(null); // null = lista template, obj = compose
-  const [saving,   setSaving]   = useState(false);
-  const [info, setInfo] = useState({ nome_scheda: "", obiettivo: "", data_inizio: new Date().toISOString().split("T")[0], data_scadenza: new Date(Date.now() + 60*24*3600000).toISOString().split("T")[0], note_trainer: "", cliente_codice: "" });
-  const [exs, setExs] = useState([]);
+  const { clienti, libreria } = data;
+  const [step, setStep] = useState("cliente");
+  const [clienteSel, setClienteSel] = useState(null);
+  const [tipoScheda, setTipoScheda] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [showNuovoCliente, setShowNuovoCliente] = useState(false);
+  const [searchCliente, setSearchCliente] = useState("");
+  const [filtroCliente, setFiltroCliente] = useState("tutti");
 
-  const pickTemplate = (t) => {
-    setSelTpl(t);
-    setInfo(p => ({ ...p, nome_scheda: t.nome, obiettivo: t.obiettivo }));
-    setExs(t.esercizi.map((e, i) => ({ ...e, _id: i })));
+  const getStatoCliente = (c) => {
+    const scheda = data.schede?.find(s => s.scheda_id === c.scheda_attiva);
+    if (!scheda) return "nessuna";
+    if (daysUntil(scheda.data_scadenza) <= 0) return "scaduta";
+    return "ok";
   };
 
-  const handleSave = async (info2, exs2) => {
-    if (!info2.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
-    if (!info2.cliente_codice) { alert("Seleziona un cliente"); return; }
+  const clientiFiltrati = useMemo(() => {
+    const q = searchCliente.toLowerCase().trim();
+    return clienti.filter(c => {
+      const ms = !q || `${c.nome} ${c.cognome} ${c.codice}`.toLowerCase().includes(q);
+      const stato = getStatoCliente(c);
+      const mf = filtroCliente === "tutti" ? true
+        : filtroCliente === "nessuna" ? stato === "nessuna"
+        : filtroCliente === "scaduta" ? stato === "scaduta"
+        : true;
+      return ms && mf;
+    }).sort((a, b) => String(a.cognome).localeCompare(String(b.cognome)));
+  }, [clienti, searchCliente, filtroCliente, data.schede]);
+
+  const resetFlow = () => { setStep("cliente"); setClienteSel(null); setTipoScheda(null); setSearchCliente(""); setFiltroCliente("tutti"); };
+
+  const handleSave = async (info, exs) => {
+    if (!info.nome_scheda) { alert("Inserisci il nome della scheda"); return; }
     setSaving(true);
     try {
-      const schedaId = genId("SCH");
-      const clienteSel = clienti.find(c => c.codice === info2.cliente_codice);
       await writeViaScript("creaSchedaDaTemplate", {
-        cliente_codice: info2.cliente_codice,
-        scheda_attiva_old: clienteSel?.scheda_attiva || "",
-        scheda: { scheda_id: schedaId, nome_scheda: info2.nome_scheda, obiettivo: info2.obiettivo, data_creazione: info2.data_inizio, data_scadenza: info2.data_scadenza, note_trainer: info2.note_trainer },
-        esercizi: exs2.map(({ _id, ...e }) => ({ ...e, scheda_id: schedaId })),
+        cliente_codice: clienteSel.codice,
+        scheda_attiva_old: clienteSel.scheda_attiva || "",
+        scheda: { scheda_id: "", nome_scheda: info.nome_scheda, obiettivo: info.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza, note_trainer: info.note_trainer },
+        esercizi: exs.map(({ _id, ...e }) => ({ ...e, scheda_id: "" })),
       });
       await onRefresh();
-      setSelTpl(null);
+      resetFlow();
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
 
-  // EDITOR SCHEDA
-  if (selTpl) return (
+  // ── STEP 3: EDITOR ──
+  if (step === "editor") {
+    const isTemplate = tipoScheda !== "zero";
+    const esIniziali = isTemplate ? tipoScheda.esercizi.map((e, i) => ({ ...e, _id: i })) : [
+      { esercizio: "", muscolo: "", seduta: "Seduta 1", serie: "3", ripetizioni: "", recupero: "60", peso_suggerito: "", note: "", ordine: 1, _id: Date.now() }
+    ];
+    const schedaIniziale = isTemplate
+      ? { nome_scheda: tipoScheda.nome, obiettivo: tipoScheda.obiettivo }
+      : { nome_scheda: `Scheda — ${clienteSel.cognome} ${clienteSel.nome}`, obiettivo: "" };
+    return (
+      <div>
+        <button onClick={() => setStep("tipo")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
+          <ArrowLeft size={16} /> Cambia tipo
+        </button>
+        {/* BANNER CLIENTE SELEZIONATO */}
+        <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 12, padding: "12px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", background: T.primary, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+            {clienteSel.nome?.[0]}{clienteSel.cognome?.[0]}
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: T.text }}>{clienteSel.nome} {clienteSel.cognome}</div>
+            <div style={{ fontSize: 11.5, color: T.textSec }}>{clienteSel.codice} · {isTemplate ? `Template: ${tipoScheda.nome}` : "Scheda da zero"}</div>
+          </div>
+          <button onClick={resetFlow} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut, fontSize: 12 }}>✕ Ricomincia</button>
+        </div>
+        <EditorScheda
+          scheda={schedaIniziale}
+          esercizi={esIniziali}
+          libreria={libreria || []}
+          clienti={clienti}
+          cliente={clienteSel}
+          onSave={handleSave}
+          onCancel={resetFlow}
+          saving={saving}
+        />
+      </div>
+    );
+  }
+
+  // ── STEP 2: TIPO SCHEDA ──
+  if (step === "tipo") return (
     <div>
-      <button onClick={() => setSelTpl(null)} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 24, padding: 0 }}>
-        <ArrowLeft size={16} /> Torna ai template
+      <button onClick={() => setStep("cliente")} style={{ display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", cursor: "pointer", color: T.primary, fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}>
+        <ArrowLeft size={16} /> Cambia cliente
       </button>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 6 }}>
-        Componi scheda — <span style={{ color: selTpl.colore }}>{selTpl.nome}</span>
-      </h1>
-      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 20 }}>Modifica gli esercizi, assegna al cliente e salva.</p>
-      <EditorScheda
-        scheda={{ nome_scheda: selTpl.nome, obiettivo: selTpl.obiettivo, data_creazione: info.data_inizio, data_scadenza: info.data_scadenza }}
-        esercizi={exs}
-        libreria={libreria || []}
-        clienti={clienti}
-        cliente={null}
-        onSave={handleSave}
-        onCancel={() => setSelTpl(null)}
-        saving={saving}
-      />
-    </div>
-  );
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Tipo di scheda</h1>
+      <p style={{ fontSize: 13.5, color: T.textSec, marginBottom: 24 }}>Per <b>{clienteSel.nome} {clienteSel.cognome}</b> — come vuoi creare la scheda?</p>
 
-  // LISTA TEMPLATE
-  return (
-    <div>
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Schede</h1>
-        <p style={{ fontSize: 13.5, color: T.textSec }}>Scegli un template, personalizzalo e assegnalo a un cliente</p>
+      {/* DA ZERO */}
+      <button onClick={() => { setTipoScheda("zero"); setStep("editor"); }} style={{ width: "100%", background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "22px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, marginBottom: 14, transition: "all 0.15s" }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = T.primary; e.currentTarget.style.boxShadow = `0 4px 20px ${T.primary}22`; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
+      >
+        <div style={{ width: 56, height: 56, borderRadius: 14, background: T.primaryLight, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Edit3 size={26} color={T.primary} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>✏️ Da zero</div>
+          <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>Foglio bianco — scrivi tu tutto, esercizio per esercizio</div>
+          <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>Ideale per trainer esperti con scheda già in mente</div>
+        </div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: T.primary, background: T.primaryLight, padding: "5px 14px", borderRadius: 8 }}>Scegli →</div>
+      </button>
+
+      {/* DIVISORE */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 1, height: 1, background: T.border }} />
+        <span style={{ fontSize: 12, color: T.textMut, fontWeight: 600 }}>oppure parti da un template</span>
+        <div style={{ flex: 1, height: 1, background: T.border }} />
       </div>
 
-      <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 12, padding: "14px 18px", marginBottom: 24, fontSize: 13, color: T.primary, fontWeight: 600 }}>
-        💡 Seleziona un template per creare una nuova scheda. Le schede assegnate si trovano nel dettaglio di ogni cliente.
-      </div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* TEMPLATE */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {TEMPLATES.map(t => (
-          <button key={t.id} onClick={() => pickTemplate(t)} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "22px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
+          <button key={t.id} onClick={() => { setTipoScheda(t); setStep("editor"); }} style={{ background: T.card, border: `2px solid ${T.border}`, borderRadius: 14, padding: "20px 24px", cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 16, transition: "all 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = t.colore; e.currentTarget.style.boxShadow = `0 4px 20px ${t.colore}22`; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = "none"; }}
           >
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Dumbbell size={26} color={t.colore} />
+            <div style={{ width: 48, height: 48, borderRadius: 12, background: t.colore + "22", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Dumbbell size={22} color={t.colore} />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{t.nome}</div>
-              <div style={{ fontSize: 13, color: T.textSec, marginTop: 4 }}>{t.descrizione}</div>
-              <div style={{ fontSize: 12, color: T.textMut, marginTop: 4 }}>{t.esercizi.length} esercizi · {t.sedute.length} sedute</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: T.text }}>{t.nome}</div>
+              <div style={{ fontSize: 12, color: T.textSec, marginTop: 3 }}>{t.descrizione}</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "5px 14px", borderRadius: 8 }}>Usa template →</div>
-            </div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: t.colore, background: t.colore + "15", padding: "4px 12px", borderRadius: 8 }}>Usa →</div>
           </button>
         ))}
+      </div>
+    </div>
+  );
+
+  // ── STEP 1: SELEZIONE CLIENTE ──
+  return (
+    <div>
+      {showNuovoCliente && (
+        <ClienteFormModal
+          clienti={clienti}
+          onClose={() => setShowNuovoCliente(false)}
+          onSaved={async () => { await onRefresh(); setShowNuovoCliente(false); }}
+        />
+      )}
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Nuova scheda</h1>
+        <p style={{ fontSize: 13.5, color: T.textSec }}>Prima seleziona il cliente, poi scegli il tipo di scheda</p>
+      </div>
+
+      {/* BARRA RICERCA + NUOVO CLIENTE */}
+      <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px" }}>
+          <Search size={15} color={T.textMut} />
+          <input value={searchCliente} onChange={e => setSearchCliente(e.target.value)} placeholder="Cerca cliente per nome o codice..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13, color: T.text, background: "transparent" }} />
+          {searchCliente && <button onClick={() => setSearchCliente("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={13} /></button>}
+        </div>
+        <button onClick={() => setShowNuovoCliente(true)} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "9px 16px", cursor: "pointer", fontSize: 13, fontWeight: 700, whiteSpace: "nowrap" }}>
+          <UserPlus size={15} /> Nuovo cliente
+        </button>
+      </div>
+
+      {/* FILTRI */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        {[
+          { id: "tutti",   label: `Tutti (${clienti.length})` },
+          { id: "ok",      label: `Con scheda (${clienti.filter(c => getStatoCliente(c) === "ok").length})`,      color: T.success, bg: T.successLight },
+          { id: "nessuna", label: `Senza scheda (${clienti.filter(c => getStatoCliente(c) === "nessuna").length})`, color: T.warning, bg: T.warningLight },
+          { id: "scaduta", label: `⚠ Scaduta (${clienti.filter(c => getStatoCliente(c) === "scaduta").length})`,   color: T.danger,  bg: T.dangerLight },
+        ].map(f => (
+          <button key={f.id} onClick={() => setFiltroCliente(f.id)} style={{ padding: "5px 14px", borderRadius: 20, border: filtroCliente === f.id ? "none" : `1px solid ${T.border}`, background: filtroCliente === f.id ? (f.bg || T.primaryLight) : "#fff", color: filtroCliente === f.id ? (f.color || T.primary) : T.textSec, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* LISTA CLIENTI */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden" }}>
+        {clientiFiltrati.length === 0 && (
+          <div style={{ padding: "32px 0", textAlign: "center", color: T.textSec, fontSize: 13 }}>Nessun cliente trovato</div>
+        )}
+        {clientiFiltrati.map((c, i) => {
+          const stato = getStatoCliente(c);
+          const badgeLabel = stato === "scaduta" ? "⚠ Scaduta" : stato === "nessuna" ? "Senza scheda" : "Ha scheda";
+          const badgeColor = stato === "scaduta" ? T.danger : stato === "nessuna" ? T.warning : T.success;
+          const badgeBg    = stato === "scaduta" ? T.dangerLight : stato === "nessuna" ? T.warningLight : T.successLight;
+          return (
+            <button key={c.codice} onClick={() => { setClienteSel(c); setStep("tipo"); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: 14, padding: "13px 18px", borderBottom: i < clientiFiltrati.length - 1 ? `1px solid ${T.border}` : "none", background: "none", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.1s" }}
+              onMouseEnter={e => e.currentTarget.style.background = T.bg}
+              onMouseLeave={e => e.currentTarget.style.background = "none"}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: T.primaryLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 800, color: T.primary, flexShrink: 0 }}>
+                {c.nome?.[0]}{c.cognome?.[0]}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{c.cognome} {c.nome}</div>
+                <div style={{ fontSize: 11.5, color: T.textMut, marginTop: 1 }}>{c.codice}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 6, color: badgeColor, background: badgeBg }}>
+                {badgeLabel}
+              </span>
+              <ChevronRight size={16} color={T.textMut} />
+            </button>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 /* ─────────────────────────────────────────────
-   ESERCIZI VIEW — gestisce solo libreria_esercizi
+   ESERCIZI VIEW — MODIFICATA: punta a libreria_esercizi
    ───────────────────────────────────────────── */
 function EserciziView({ data, onRefresh }) {
-  const { libreria = [] } = data;
-  const [search,     setSearch]     = useState("");
-  const [showForm,   setShowForm]   = useState(false);
-  const [editEx,     setEditEx]     = useState(null);
+  // MODIFICA 3: usa libreria invece di esercizi
+  const { libreria } = data;
+  const [search, setSearch] = useState("");
+  const [filterMuscolo, setFilterMuscolo] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+  const [editEx, setEditEx] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
   const [delLoading, setDelLoading] = useState(false);
-  const [saving,     setSaving]     = useState(false);
-  const emptyForm = { esercizio: "", muscolo: "" };
-  const [form, setForm] = useState(emptyForm);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ esercizio: "", muscolo: "" });
+
+  const muscoli = useMemo(() => {
+    return [...new Set(libreria.map(e => e.muscolo).filter(Boolean))].sort();
+  }, [libreria]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    if (!q) return libreria;
-    return libreria.filter(e => `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q));
-  }, [libreria, search]);
+    return libreria.filter(e => {
+      const ms = !q || `${e.esercizio} ${e.muscolo}`.toLowerCase().includes(q);
+      const mm = filterMuscolo === "all" || e.muscolo === filterMuscolo;
+      return ms && mm;
+    });
+  }, [libreria, search, filterMuscolo]);
 
   const grouped = useMemo(() => {
     const g = {};
     filtered.forEach(e => { const k = e.muscolo || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
-    Object.keys(g).forEach(k => g[k].sort((a, b) => a.esercizio.localeCompare(b.esercizio)));
-    return Object.fromEntries(Object.entries(g).sort(([a],[b]) => a.localeCompare(b)));
+    return g;
   }, [filtered]);
 
   const handleAdd = async () => {
-    if (!form.esercizio.trim()) { alert("Inserisci il nome dell'esercizio"); return; }
-    if (!form.muscolo.trim())   { alert("Inserisci il gruppo muscolare"); return; }
-    const dup = libreria.find(e => e.esercizio.trim().toLowerCase() === form.esercizio.trim().toLowerCase());
-    if (dup) { alert(`⚠️ "${dup.esercizio}" esiste già in libreria nel gruppo ${dup.muscolo}`); return; }
+    if (!form.esercizio) { alert("Inserisci il nome dell'esercizio"); return; }
     setSaving(true);
     try {
-      await writeViaScript("addLibreria", { esercizio: { esercizio: form.esercizio.trim(), muscolo: form.muscolo.trim() } });
+      await writeViaScript("addLibreriaEsercizio", { esercizio: form });
       await onRefresh();
       setShowForm(false);
-      setForm(emptyForm);
-    } catch (err) { alert("Errore: " + err.message); }
-    finally { setSaving(false); }
-  };
-
-  const handleEdit = async () => {
-    if (!editEx.esercizio.trim()) { alert("Il nome non può essere vuoto"); return; }
-    setSaving(true);
-    try {
-      await writeViaScript("updateLibreria", { esercizio: { esercizio: editEx.esercizio.trim(), muscolo: editEx.muscolo.trim() }, original: editEx._original });
-      await onRefresh();
-      setEditEx(null);
+      setForm({ esercizio: "", muscolo: "" });
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
@@ -1303,14 +1780,12 @@ function EserciziView({ data, onRefresh }) {
   const handleDelete = async () => {
     setDelLoading(true);
     try {
-      await writeViaScript("deleteLibreria", { esercizio: confirmDel });
+      await writeViaScript("deleteLibreriaEsercizio", { esercizio: confirmDel.esercizio });
       await onRefresh();
       setConfirmDel(null);
     } catch (err) { alert("Errore: " + err.message); }
     finally { setDelLoading(false); }
   };
-
-  const muscoli = [...new Set(libreria.map(e => e.muscolo).filter(Boolean))].sort();
 
   return (
     <div>
@@ -1318,104 +1793,92 @@ function EserciziView({ data, onRefresh }) {
 
       {editEx && (
         <Overlay zIndex={1100}>
-          <ModalBox maxWidth={420}>
+          <ModalBox maxWidth={400}>
             <ModalHeader title="Modifica esercizio" onClose={() => setEditEx(null)} />
             <div style={{ padding: "20px 24px", overflow: "auto", flex: 1 }}>
-              <div style={{ marginBottom: 12 }}>
-                <Field label="NOME *"><Input value={editEx.esercizio} onChange={v => setEditEx(p => ({ ...p, esercizio: v }))} /></Field>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <Field label="NOME *"><Input value={editEx.esercizio || ""} onChange={v => setEditEx(p => ({ ...p, esercizio: v }))} /></Field>
+                <Field label="MUSCOLO"><Input value={editEx.muscolo || ""} onChange={v => setEditEx(p => ({ ...p, muscolo: v }))} /></Field>
               </div>
-              <Field label="GRUPPO MUSCOLARE *">
-                <select value={editEx.muscolo} onChange={e => setEditEx(p => ({ ...p, muscolo: e.target.value }))}
-                  style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
-                  {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
-                  <option value="__new__">+ Nuovo gruppo...</option>
-                </select>
-                {editEx.muscolo === "__new__" && (
-                  <Input value={editEx._newMuscolo || ""} onChange={v => setEditEx(p => ({ ...p, _newMuscolo: v }))} placeholder="Es: Avambracci" style={{ marginTop: 8 }} />
-                )}
-              </Field>
             </div>
             <ModalFooter>
               <BtnSecondary onClick={() => setEditEx(null)}>Annulla</BtnSecondary>
-              <BtnPrimary onClick={handleEdit} loading={saving}><Save size={14} /> Salva</BtnPrimary>
+              <BtnPrimary onClick={async () => {
+                setSaving(true);
+                try {
+                  await writeViaScript("updateLibreriaEsercizio", { esercizio: editEx });
+                  await onRefresh();
+                  setEditEx(null);
+                } catch (err) { alert(err.message); }
+                finally { setSaving(false); }
+              }} loading={saving}><Save size={14} /> Salva</BtnPrimary>
             </ModalFooter>
           </ModalBox>
         </Overlay>
       )}
 
-      {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>Libreria Esercizi</h1>
-          <p style={{ fontSize: 13.5, color: T.textSec }}>{libreria.length} esercizi disponibili · usati nei template schede</p>
+          <p style={{ fontSize: 13.5, color: T.textSec }}>{libreria.length} esercizi disponibili</p>
         </div>
         <button onClick={() => setShowForm(v => !v)} style={{ display: "flex", alignItems: "center", gap: 7, background: T.primary, color: "#fff", border: "none", borderRadius: 10, padding: "10px 18px", cursor: "pointer", fontSize: 13.5, fontWeight: 700 }}>
-          <Plus size={17} /> Aggiungi
+          <Plus size={17} /> Aggiungi esercizio
         </button>
       </div>
 
-      {/* BANNER INFO */}
-      <div style={{ background: T.primaryLight, border: `1px solid ${T.primaryBorder}`, borderRadius: 10, padding: "11px 16px", marginBottom: 20, fontSize: 12.5, color: T.primary, fontWeight: 600 }}>
-        💡 Questi sono gli esercizi disponibili quando crei o modifichi una scheda. Non sono legati a nessuna scheda specifica.
-      </div>
-
-      {/* FORM AGGIUNTA */}
       {showForm && (
         <div style={{ background: T.card, border: `1px solid ${T.primaryBorder}`, borderRadius: 14, padding: "22px 24px", marginBottom: 22, boxShadow: "0 4px 20px rgba(255,107,0,0.08)" }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 18 }}>➕ Nuovo esercizio in libreria</div>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 18 }}>
-            <Field label="NOME ESERCIZIO *">
-              <Input value={form.esercizio} onChange={v => setForm(p => ({ ...p, esercizio: v }))} placeholder="Es: Affondo bulgaro" />
-            </Field>
-            <Field label="GRUPPO MUSCOLARE *">
-              <select value={form.muscolo} onChange={e => setForm(p => ({ ...p, muscolo: e.target.value === "__new__" ? "" : e.target.value, _newMuscolo: e.target.value === "__new__" }))}
-                style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 12px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}>
-                <option value="">Seleziona gruppo...</option>
-                {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
-                <option value="__new__">+ Nuovo gruppo...</option>
-              </select>
-              {form._newMuscolo && (
-                <Input value={form.muscolo === "__new__" ? "" : form.muscolo} onChange={v => setForm(p => ({ ...p, muscolo: v }))} placeholder="Es: Avambracci" style={{ marginTop: 8 }} />
-              )}
+            <Field label="NOME ESERCIZIO *"><Input value={form.esercizio} onChange={v => setForm(p => ({ ...p, esercizio: v }))} placeholder="Es: Panca piana bilanciere" /></Field>
+            <Field label="MUSCOLO">
+              <input
+                list="muscoli-list"
+                value={form.muscolo}
+                onChange={e => setForm(p => ({ ...p, muscolo: e.target.value }))}
+                placeholder="Es: Pettorali"
+                style={{ border: `1px solid ${T.border}`, borderRadius: 8, padding: "9px 11px", fontSize: 13, color: T.text, outline: "none", background: "#fff", width: "100%" }}
+              />
+              <datalist id="muscoli-list">
+                {muscoli.map(m => <option key={m} value={m} />)}
+              </datalist>
             </Field>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <BtnSecondary onClick={() => { setShowForm(false); setForm(emptyForm); }}>Annulla</BtnSecondary>
+            <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
             <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Aggiungi alla libreria</BtnPrimary>
           </div>
         </div>
       )}
 
-      {/* RICERCA */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px", marginBottom: 20 }}>
-        <Search size={16} color={T.textMut} />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca per nome o muscolo..."
-          style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: T.text, background: "transparent" }} />
-        {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={14} /></button>}
+      <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200, background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px" }}>
+          <Search size={16} color={T.textMut} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cerca esercizio..." style={{ flex: 1, border: "none", outline: "none", fontSize: 13.5, color: T.text, background: "transparent" }} />
+          {search && <button onClick={() => setSearch("")} style={{ background: "none", border: "none", cursor: "pointer", color: T.textMut }}><X size={14} /></button>}
+        </div>
+        <select value={filterMuscolo} onChange={e => setFilterMuscolo(e.target.value)} style={{ border: `1px solid ${T.border}`, borderRadius: 10, padding: "9px 14px", fontSize: 13, color: T.text, background: T.card, outline: "none", cursor: "pointer" }}>
+          <option value="all">Tutti i muscoli</option>
+          {muscoli.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
       </div>
 
-      {/* LISTA PER MUSCOLO */}
       {Object.entries(grouped).length === 0
         ? <EmptyState icon={Dumbbell} msg="Nessun esercizio trovato." />
-        : Object.entries(grouped).map(([muscolo, exs]) => (
+        : Object.entries(grouped).sort(([a],[b]) => a.localeCompare(b)).map(([muscolo, exs]) => (
           <div key={muscolo} style={{ marginBottom: 18 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: T.primary, letterSpacing: "1px", textTransform: "uppercase" }}>{muscolo}</div>
-              <div style={{ fontSize: 11, color: T.textMut, fontWeight: 600 }}>({exs.length})</div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: T.primary, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 10 }}>
+              {muscolo} <span style={{ color: T.textMut, fontWeight: 600 }}>({exs.length})</span>
             </div>
             <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, overflow: "hidden" }}>
               {exs.map((ex, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 16px", borderBottom: i < exs.length - 1 ? `1px solid ${T.border}` : "none" }}>
-                  <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, color: T.text }}>{ex.esercizio}</div>
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 14, padding: "11px 18px", borderBottom: i < exs.length - 1 ? `1px solid ${T.border}` : "none" }}>
+                  <div style={{ width: 28, height: 28, borderRadius: 7, background: T.primaryLight, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 800, color: T.primary }}>{i + 1}</div>
+                  <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: T.text }}>{ex.esercizio}</div>
                   <div style={{ display: "flex", gap: 6 }}>
-                    <button onClick={() => setEditEx({ ...ex, _original: ex.esercizio })}
-                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1" }}>
-                      <Edit3 size={12} /> Modifica
-                    </button>
-                    <button onClick={() => setConfirmDel(ex)}
-                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
-                      <Trash2 size={12} /> Elimina
-                    </button>
+                    <button onClick={() => setEditEx({ ...ex })} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1" }}><Edit3 size={12} /> Modifica</button>
+                    <button onClick={() => setConfirmDel(ex)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}><Trash2 size={12} /> Elimina</button>
                   </div>
                 </div>
               ))}
@@ -1427,9 +1890,8 @@ function EserciziView({ data, onRefresh }) {
   );
 }
 
-
 /* ─────────────────────────────────────────────
-   IMPOSTAZIONI — Corsi e Professionisti
+   IMPOSTAZIONI
    ───────────────────────────────────────────── */
 function ServiceCard({ items, title, emoji, onDelete }) {
   return (
@@ -1448,12 +1910,6 @@ function ServiceCard({ items, title, emoji, onDelete }) {
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
               {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
               {s.contatto && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
-              {s.tipo === "professionista" && s.instagram && (
-                <a href={`https://instagram.com/${s.instagram.replace("@","")}`} target="_blank" rel="noreferrer"
-                  style={{ fontSize: 12, color: "#E1306C", marginTop: 3, fontWeight: 600, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                  📷 {s.instagram.startsWith("@") ? s.instagram : `@${s.instagram}`}
-                </a>
-              )}
             </div>
             <button onClick={() => onDelete(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
               <Trash2 size={12} /> Elimina
@@ -1471,7 +1927,7 @@ function ImpostazioniView({ data, onRefresh }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [delLoading, setDelLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
+  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
 
   const corsi = servizi.filter(s => s.tipo === "corso");
   const professionisti = servizi.filter(s => s.tipo === "professionista");
@@ -1483,7 +1939,7 @@ function ImpostazioniView({ data, onRefresh }) {
       await writeViaScript("addServizio", { servizio: form });
       await onRefresh();
       setShowForm(false);
-      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
+      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
     } catch (err) { alert("Errore: " + err.message); }
     finally { setSaving(false); }
   };
@@ -1500,15 +1956,7 @@ function ImpostazioniView({ data, onRefresh }) {
 
   return (
     <div>
-      {confirmDel && (
-        <ConfirmModal
-          message={`Eliminare "${confirmDel.nome}"?`}
-          onConfirm={handleDelete}
-          onCancel={() => setConfirmDel(null)}
-          loading={delLoading}
-        />
-      )}
-
+      {confirmDel && <ConfirmModal message={`Eliminare "${confirmDel.nome}"?`} onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>La Palestra</h1>
@@ -1518,10 +1966,8 @@ function ImpostazioniView({ data, onRefresh }) {
           <Plus size={17} /> Aggiungi
         </button>
       </div>
-
-      {/* FORM AGGIUNTA */}
       {showForm && (
-        <div style={{ background: T.card, border: `1px solid ${T.primaryBorder}`, borderRadius: 14, padding: "22px 24px", marginBottom: 22, boxShadow: "0 4px 20px rgba(255,107,0,0.08)" }}>
+        <div style={{ background: T.card, border: `1px solid ${T.primaryBorder}`, borderRadius: 14, padding: "22px 24px", marginBottom: 22 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 18 }}>➕ Nuovo elemento</div>
           <div style={{ marginBottom: 12 }}>
             <Field label="TIPO">
@@ -1534,25 +1980,17 @@ function ImpostazioniView({ data, onRefresh }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <Field label="NOME *"><Input value={form.nome} onChange={v => setForm(p => ({ ...p, nome: v }))} placeholder={form.tipo === "corso" ? "Es: Pilates" : "Es: Dott. Rossi"} /></Field>
-            <Field label="CONTATTO"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder={form.tipo === "corso" ? "Es: Istruttore: Laura" : "Es: 333 0000000"} /></Field>
+            <Field label="CONTATTO"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
           </div>
           <Field label="DESCRIZIONE">
-            <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder={form.tipo === "corso" ? "Es: Lezioni ogni martedì e giovedì" : "Es: Fisioterapista specializzato"} />
+            <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." />
           </Field>
-          {form.tipo === "professionista" && (
-            <div style={{ marginTop: 12 }}>
-              <Field label="INSTAGRAM">
-                <Input value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="Es: @dott.rossi" />
-              </Field>
-            </div>
-          )}
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
             <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
             <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Salva</BtnPrimary>
           </div>
         </div>
       )}
-
       <ServiceCard items={corsi} title="I nostri corsi" emoji="💪" onDelete={setConfirmDel} />
       <ServiceCard items={professionisti} title="I nostri professionisti" emoji="🏥" onDelete={setConfirmDel} />
     </div>
@@ -1585,7 +2023,9 @@ function ErrorScreen({ error, onRetry }) {
    APP ROOT
    ───────────────────────────────────────────── */
 export default function AdminPanel() {
-  const [loggedIn,        setLoggedIn]        = useState(false);
+  const [loggedIn, setLoggedIn] = useState(() => {
+    try { return localStorage.getItem("gym_admin_logged") === "true"; } catch { return false; }
+  });
   const [data,            setData]            = useState(null);
   const [loading,         setLoading]         = useState(true);
   const [error,           setError]           = useState(null);
@@ -1602,7 +2042,10 @@ export default function AdminPanel() {
 
   useEffect(() => { if (loggedIn) loadData(); }, [loggedIn, loadData]);
 
-  if (!loggedIn) return <LoginScreen onLogin={() => setLoggedIn(true)} />;
+  if (!loggedIn) return <LoginScreen onLogin={() => {
+    setLoggedIn(true);
+    try { localStorage.setItem("gym_admin_logged", "true"); } catch {}
+  }} />;
   if (loading)   return <LoadingScreen />;
   if (error)     return <ErrorScreen error={error} onRetry={loadData} />;
 
@@ -1620,9 +2063,13 @@ export default function AdminPanel() {
         ::-webkit-scrollbar-thumb { background: #DDD; border-radius: 3px; }
         button, input, select, textarea { font-family: inherit; }
         input::placeholder { color: #9CA3AF; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
-      <Sidebar active={sidebarActive} onNavigate={navigate} config={data.config} onLogout={() => { setLoggedIn(false); setPage("dashboard"); }} />
+      <Sidebar active={sidebarActive} onNavigate={navigate} config={data.config} onLogout={() => {
+        setLoggedIn(false); setPage("dashboard");
+        try { localStorage.removeItem("gym_admin_logged"); } catch {}
+      }} />
 
       <div style={{ flex: 1, padding: "32px 36px", overflow: "auto" }}>
         <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 24 }}>
@@ -1631,14 +2078,23 @@ export default function AdminPanel() {
           </button>
         </div>
 
+        {loading && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div style={{ background: "#fff", borderRadius: 16, padding: "28px 36px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+              <div style={{ width: 40, height: 40, border: `3px solid ${T.primaryLight}`, borderTop: `3px solid ${T.primary}`, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+              <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>Caricamento...</div>
+            </div>
+          </div>
+        )}
+
         {waCliente && <WAModal cliente={waCliente} onClose={() => setWaCliente(null)} />}
 
-        {page === "dashboard"     && <DashboardView data={data} onNavigate={navigate} />}
+        {page === "dashboard"     && <DashboardView data={data} onNavigate={navigate} onSelectCliente={openCliente} />}
         {page === "clienti"       && <ClientiView   data={data} onSelectCliente={openCliente} onRefresh={loadData} />}
         {page === "clienteDetail" && selectedCliente && <ClienteDetail cliente={selectedCliente} data={data} onBack={() => navigate("clienti")} onWhatsApp={setWaCliente} onRefresh={loadData} />}
         {page === "schede"        && <SchedeView    data={data} onRefresh={loadData} />}
         {page === "esercizi"      && <EserciziView  data={data} onRefresh={loadData} />}
-        {page === "impostazioni"   && <ImpostazioniView data={data} onRefresh={loadData} />}
+        {page === "impostazioni"  && <ImpostazioniView data={data} onRefresh={loadData} />}
       </div>
     </div>
   );
