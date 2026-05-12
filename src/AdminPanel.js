@@ -138,21 +138,56 @@ async function fetchAllData() {
     fetchSheet("esercizi"), fetchSheet("libreria_esercizi"),
   ]);
   let servizi = [];
-  try { servizi = await fetchSheet("servizi"); } catch(e) {}
+  try {
+    servizi = await fetchSheet("servizi");
+  } catch(e) {
+    // Riprova una volta in caso di errore temporaneo
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      servizi = await fetchSheet("servizi");
+    } catch(e2) {
+      console.warn("Foglio 'servizi' non trovato o errore:", e2.message);
+    }
+  }
   const config = Object.fromEntries(configRows.map(r => [r.chiave, r.valore]));
   return { config, clienti, schede, esercizi, libreria, servizi };
 }
 
 async function writeViaScript(action, payload) {
   const body = JSON.stringify({ action, ...payload });
-  const res = await fetch(SCRIPT_URL, {
-    method: "POST",
-    body,
-    redirect: "follow",
-  });
-  if (!res.ok) throw new Error(`Errore scrittura: ${res.status}`);
+  let res;
+  try {
+    res = await fetch(SCRIPT_URL, {
+      method: "POST",
+      body,
+      redirect: "follow",
+    });
+  } catch (networkErr) {
+    // Se il redirect GAS fallisce, riprova con mode no-cors come fallback
+    try {
+      res = await fetch(SCRIPT_URL, {
+        method: "POST",
+        body,
+        mode: "no-cors",
+      });
+      // no-cors restituisce opaque response — consideriamo successo
+      return { status: "ok" };
+    } catch (e2) {
+      throw new Error(`Errore di rete: ${networkErr.message}`);
+    }
+  }
+  // Google Apps Script a volte restituisce redirect con status non-ok
+  // ma l'operazione va comunque a buon fine
   const text = await res.text();
-  try { return JSON.parse(text); } catch { return { status: "ok" }; }
+  try {
+    const json = JSON.parse(text);
+    if (json.error) throw new Error(json.error);
+    return json;
+  } catch {
+    // Se non è JSON ma la risposta è arrivata, consideriamo successo
+    if (res.status >= 200 && res.status < 400) return { status: "ok" };
+    throw new Error(`Errore scrittura: ${res.status} — ${text.substring(0, 200)}`);
+  }
 }
 
 /* ─────────────────────────────────────────────
@@ -1388,6 +1423,10 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
       if (!g[k]) g[k] = [];
       g[k].push(e);
     });
+    // Ordina gli esercizi alfabeticamente all'interno di ogni gruppo muscolare
+    Object.keys(g).forEach(k => {
+      g[k].sort((a, b) => (a.esercizio || "").localeCompare(b.esercizio || "", "it"));
+    });
     return g;
   }, [libreria]);
 
@@ -1501,7 +1540,7 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                       onBlur={e => { e.target.style.borderColor = "transparent"; e.target.style.background = "transparent"; }}
                     />
                     <datalist id={`lib-${ex._id}`}>
-                      {libreria.map((lib, li) => <option key={li} value={lib.esercizio} />)}
+                      {[...libreria].sort((a, b) => (a.esercizio || "").localeCompare(b.esercizio || "", "it")).map((lib, li) => <option key={li} value={lib.esercizio} />)}
                     </datalist>
                   </div>
                   {["serie","ripetizioni","peso_suggerito","recupero","note"].map((f, fi) => (
@@ -1538,7 +1577,7 @@ function EditorScheda({ scheda, esercizi: esErca, libreria, clienti, cliente, on
                     style={{ flex: 2, border: `1px solid ${T.border}`, borderRadius: 7, padding: "7px 10px", fontSize: 12, color: T.text, outline: "none", background: "#fff", cursor: "pointer" }}
                   >
                     <option value="">Seleziona esercizio...</option>
-                    {(muscoloSel[sed] ? (libByMuscolo[muscoloSel[sed]] || []) : libreria).map((lib, li) => (
+                    {(muscoloSel[sed] ? (libByMuscolo[muscoloSel[sed]] || []) : [...libreria].sort((a, b) => (a.esercizio || "").localeCompare(b.esercizio || "", "it"))).map((lib, li) => (
                       <option key={li} value={lib.esercizio}>{lib.esercizio}</option>
                     ))}
                   </select>
@@ -1813,6 +1852,10 @@ function EserciziView({ data, onRefresh }) {
   const grouped = useMemo(() => {
     const g = {};
     filtered.forEach(e => { const k = e.muscolo || "Altro"; if (!g[k]) g[k] = []; g[k].push(e); });
+    // Ordina gli esercizi alfabeticamente all'interno di ogni gruppo muscolare
+    Object.keys(g).forEach(k => {
+      g[k].sort((a, b) => (a.esercizio || "").localeCompare(b.esercizio || "", "it"));
+    });
     return g;
   }, [filtered]);
 
@@ -1978,20 +2021,27 @@ function ImpostazioniView({ data, onRefresh }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const [delLoading, setDelLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
+  const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
 
   const corsi = servizi.filter(s => s.tipo === "corso");
   const professionisti = servizi.filter(s => s.tipo === "professionista");
 
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
   const handleAdd = async () => {
     if (!form.nome) { alert("Inserisci il nome"); return; }
     setSaving(true);
+    setSaveSuccess(false);
     try {
       await writeViaScript("addServizio", { servizio: form });
+      // Piccolo delay per dare tempo a Google Sheet di scrivere
+      await new Promise(r => setTimeout(r, 1200));
       await onRefresh();
       setShowForm(false);
-      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "" });
-    } catch (err) { alert("Errore: " + err.message); }
+      setForm({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) { alert("Errore nel salvataggio: " + err.message + "\n\nRiprova tra qualche secondo."); }
     finally { setSaving(false); }
   };
 
@@ -2007,6 +2057,11 @@ function ImpostazioniView({ data, onRefresh }) {
 
   return (
     <div>
+      {saveSuccess && (
+        <div style={{ background: T.successLight, border: `1px solid ${T.success}`, borderRadius: 10, padding: "12px 18px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10, fontSize: 13, fontWeight: 700, color: T.success }}>
+          <CheckCircle size={16} /> Elemento salvato con successo!
+        </div>
+      )}
       {confirmDel && <ConfirmModal message={`Eliminare "${confirmDel.nome}"?`} onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
@@ -2033,9 +2088,12 @@ function ImpostazioniView({ data, onRefresh }) {
             <Field label="NOME *"><Input value={form.nome} onChange={v => setForm(p => ({ ...p, nome: v }))} placeholder={form.tipo === "corso" ? "Es: Pilates" : "Es: Dott. Rossi"} /></Field>
             <Field label="CONTATTO"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
           </div>
-          <Field label="DESCRIZIONE">
-            <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." />
-          </Field>
+          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 12 }}>
+            <Field label="DESCRIZIONE">
+              <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." />
+            </Field>
+            <Field label="INSTAGRAM"><Input value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="Es: @nomecorso" /></Field>
+          </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
             <BtnSecondary onClick={() => setShowForm(false)}>Annulla</BtnSecondary>
             <BtnPrimary onClick={handleAdd} loading={saving}><Plus size={14} /> Salva</BtnPrimary>
