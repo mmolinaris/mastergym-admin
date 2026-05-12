@@ -2099,9 +2099,11 @@ function ImpostazioniView({ data, onRefresh }) {
             <div style={{ padding: "20px 24px", overflow: "auto", flex: 1 }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <Field label="NOME *"><Input value={editItem.nome || ""} onChange={v => setEditItem(p => ({ ...p, nome: v }))} /></Field>
-                <Field label="DESCRIZIONE"><Input value={editItem.descrizione || ""} onChange={v => setEditItem(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." /></Field>
+                <Field label={editItem.tipo === "corso" ? "ORARI DEL CORSO" : "DESCRIZIONE"}>
+                  <Input value={editItem.descrizione || ""} onChange={v => setEditItem(p => ({ ...p, descrizione: v }))} placeholder={editItem.tipo === "corso" ? "Es: Lunedì e Mercoledì 10:00 - 11:00" : "Descrizione..."} />
+                </Field>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-                  <Field label="CONTATTO"><Input value={editItem.contatto === "definire" ? "" : (editItem.contatto || "")} onChange={v => setEditItem(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
+                  <Field label="CONTATTO (telefono)"><Input value={editItem.contatto === "definire" ? "" : (editItem.contatto || "")} onChange={v => setEditItem(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
                   <Field label="INSTAGRAM"><Input value={editItem.instagram || ""} onChange={v => setEditItem(p => ({ ...p, instagram: v }))} placeholder="Es: @nome" /></Field>
                 </div>
               </div>
@@ -2139,10 +2141,21 @@ function ImpostazioniView({ data, onRefresh }) {
             <Field label="NOME *"><Input value={form.nome} onChange={v => setForm(p => ({ ...p, nome: v }))} placeholder={form.tipo === "corso" ? "Es: Pilates" : "Es: Dott. Rossi"} /></Field>
             <Field label="CONTATTO (telefono)"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label={form.tipo === "corso" ? "ORARI / DESCRIZIONE" : "DESCRIZIONE"}>
-              <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder={form.tipo === "corso" ? "Es: Lunedì e Mercoledì 10:00 - 11:00" : "Descrizione..."} />
-            </Field>
+          {form.tipo === "corso" && (
+            <div style={{ marginBottom: 12 }}>
+              <Field label="ORARI DEL CORSO">
+                <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Es: Lunedì e Mercoledì 10:00 - 11:00, Sabato 9:00 - 10:00" />
+              </Field>
+            </div>
+          )}
+          {form.tipo === "professionista" && (
+            <div style={{ marginBottom: 12 }}>
+              <Field label="DESCRIZIONE">
+                <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Es: Fisioterapista sportivo" />
+              </Field>
+            </div>
+          )}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <Field label="INSTAGRAM"><Input value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="Es: @nomecorso" /></Field>
           </div>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 18 }}>
