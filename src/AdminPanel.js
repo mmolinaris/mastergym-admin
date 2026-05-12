@@ -2002,8 +2002,8 @@ function ServiceCard({ items, title, emoji, onDelete, onEdit }) {
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: i < items.length - 1 ? `1px solid ${T.border}` : "none" }}>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
-              {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
-              {s.contatto && s.contatto.toLowerCase() !== "definire" && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
+              {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.tipo === "corso" ? "🕐 " : ""}{s.descrizione}</div>}
+              {s.contatto && s.contatto.toLowerCase() !== "definire" && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>📞 {s.contatto}</div>}
               {s.contatto && s.contatto.toLowerCase() === "definire" && <div style={{ fontSize: 11, color: T.textMut, marginTop: 2, fontStyle: "italic" }}>Contatto da definire</div>}
               {s.instagram && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>📷 {s.instagram}</div>}
             </div>
@@ -2137,11 +2137,11 @@ function ImpostazioniView({ data, onRefresh }) {
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
             <Field label="NOME *"><Input value={form.nome} onChange={v => setForm(p => ({ ...p, nome: v }))} placeholder={form.tipo === "corso" ? "Es: Pilates" : "Es: Dott. Rossi"} /></Field>
-            <Field label="CONTATTO"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
+            <Field label="CONTATTO (telefono)"><Input value={form.contatto} onChange={v => setForm(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 12, marginBottom: 12 }}>
-            <Field label="DESCRIZIONE">
-              <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." />
+            <Field label={form.tipo === "corso" ? "ORARI / DESCRIZIONE" : "DESCRIZIONE"}>
+              <Input value={form.descrizione} onChange={v => setForm(p => ({ ...p, descrizione: v }))} placeholder={form.tipo === "corso" ? "Es: Lunedì e Mercoledì 10:00 - 11:00" : "Descrizione..."} />
             </Field>
             <Field label="INSTAGRAM"><Input value={form.instagram} onChange={v => setForm(p => ({ ...p, instagram: v }))} placeholder="Es: @nomecorso" /></Field>
           </div>
