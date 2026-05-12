@@ -1987,7 +1987,7 @@ function EserciziView({ data, onRefresh }) {
 /* ─────────────────────────────────────────────
    IMPOSTAZIONI
    ───────────────────────────────────────────── */
-function ServiceCard({ items, title, emoji, onDelete }) {
+function ServiceCard({ items, title, emoji, onDelete, onEdit }) {
   return (
     <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", marginBottom: 18 }}>
       <div style={{ padding: "14px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", gap: 8 }}>
@@ -2003,11 +2003,18 @@ function ServiceCard({ items, title, emoji, onDelete }) {
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: T.text }}>{s.nome}</div>
               {s.descrizione && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>{s.descrizione}</div>}
-              {s.contatto && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
+              {s.contatto && s.contatto.toLowerCase() !== "definire" && <div style={{ fontSize: 12, color: T.primary, marginTop: 2, fontWeight: 600 }}>{s.contatto}</div>}
+              {s.contatto && s.contatto.toLowerCase() === "definire" && <div style={{ fontSize: 11, color: T.textMut, marginTop: 2, fontStyle: "italic" }}>Contatto da definire</div>}
+              {s.instagram && <div style={{ fontSize: 12, color: T.textSec, marginTop: 2 }}>📷 {s.instagram}</div>}
             </div>
-            <button onClick={() => onDelete(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
-              <Trash2 size={12} /> Elimina
-            </button>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={() => onEdit(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: "#EEF2FF", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "#6366F1" }}>
+                <Edit3 size={12} /> Modifica
+              </button>
+              <button onClick={() => onDelete(s)} style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 10px", borderRadius: 7, border: `1px solid ${T.border}`, background: T.dangerLight, cursor: "pointer", fontSize: 12, fontWeight: 600, color: T.danger }}>
+                <Trash2 size={12} /> Elimina
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -2022,6 +2029,7 @@ function ImpostazioniView({ data, onRefresh }) {
   const [delLoading, setDelLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ tipo: "corso", nome: "", descrizione: "", contatto: "", instagram: "" });
+  const [editItem, setEditItem] = useState(null);
 
   const corsi = servizi.filter(s => s.tipo === "corso");
   const professionisti = servizi.filter(s => s.tipo === "professionista");
@@ -2034,7 +2042,6 @@ function ImpostazioniView({ data, onRefresh }) {
     setSaveSuccess(false);
     try {
       await writeViaScript("addServizio", { servizio: form });
-      // Piccolo delay per dare tempo a Google Sheet di scrivere
       await new Promise(r => setTimeout(r, 1200));
       await onRefresh();
       setShowForm(false);
@@ -2045,14 +2052,35 @@ function ImpostazioniView({ data, onRefresh }) {
     finally { setSaving(false); }
   };
 
+  const handleEditSave = async () => {
+    if (!editItem || !editItem.nome) { alert("Inserisci il nome"); return; }
+    setSaving(true);
+    try {
+      // Elimina il vecchio e ricrea con i nuovi dati
+      await writeViaScript("deleteServizio", { servizio: editItem._original });
+      await writeViaScript("addServizio", { servizio: { tipo: editItem.tipo, nome: editItem.nome, descrizione: editItem.descrizione, contatto: editItem.contatto, instagram: editItem.instagram || "" } });
+      await new Promise(r => setTimeout(r, 1200));
+      await onRefresh();
+      setEditItem(null);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) { alert("Errore nel salvataggio: " + err.message); }
+    finally { setSaving(false); }
+  };
+
   const handleDelete = async () => {
     setDelLoading(true);
     try {
       await writeViaScript("deleteServizio", { servizio: confirmDel });
+      await new Promise(r => setTimeout(r, 800));
       await onRefresh();
       setConfirmDel(null);
     } catch (err) { alert("Errore: " + err.message); }
     finally { setDelLoading(false); }
+  };
+
+  const openEdit = (s) => {
+    setEditItem({ ...s, _original: { ...s } });
   };
 
   return (
@@ -2063,6 +2091,29 @@ function ImpostazioniView({ data, onRefresh }) {
         </div>
       )}
       {confirmDel && <ConfirmModal message={`Eliminare "${confirmDel.nome}"?`} onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} loading={delLoading} />}
+
+      {editItem && (
+        <Overlay zIndex={1100}>
+          <ModalBox maxWidth={480}>
+            <ModalHeader title={`Modifica: ${editItem._original.nome}`} onClose={() => setEditItem(null)} />
+            <div style={{ padding: "20px 24px", overflow: "auto", flex: 1 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <Field label="NOME *"><Input value={editItem.nome || ""} onChange={v => setEditItem(p => ({ ...p, nome: v }))} /></Field>
+                <Field label="DESCRIZIONE"><Input value={editItem.descrizione || ""} onChange={v => setEditItem(p => ({ ...p, descrizione: v }))} placeholder="Descrizione..." /></Field>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <Field label="CONTATTO"><Input value={editItem.contatto === "definire" ? "" : (editItem.contatto || "")} onChange={v => setEditItem(p => ({ ...p, contatto: v }))} placeholder="Es: 333 0000000" /></Field>
+                  <Field label="INSTAGRAM"><Input value={editItem.instagram || ""} onChange={v => setEditItem(p => ({ ...p, instagram: v }))} placeholder="Es: @nome" /></Field>
+                </div>
+              </div>
+            </div>
+            <ModalFooter>
+              <BtnSecondary onClick={() => setEditItem(null)}>Annulla</BtnSecondary>
+              <BtnPrimary onClick={handleEditSave} loading={saving}><Save size={14} /> Salva modifiche</BtnPrimary>
+            </ModalFooter>
+          </ModalBox>
+        </Overlay>
+      )}
+
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: T.text, marginBottom: 4 }}>La Palestra</h1>
@@ -2100,8 +2151,8 @@ function ImpostazioniView({ data, onRefresh }) {
           </div>
         </div>
       )}
-      <ServiceCard items={corsi} title="I nostri corsi" emoji="💪" onDelete={setConfirmDel} />
-      <ServiceCard items={professionisti} title="I nostri professionisti" emoji="🏥" onDelete={setConfirmDel} />
+      <ServiceCard items={corsi} title="I nostri corsi" emoji="💪" onDelete={setConfirmDel} onEdit={openEdit} />
+      <ServiceCard items={professionisti} title="I nostri professionisti" emoji="🏥" onDelete={setConfirmDel} onEdit={openEdit} />
     </div>
   );
 }
